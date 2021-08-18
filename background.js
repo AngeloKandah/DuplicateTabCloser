@@ -1,12 +1,25 @@
-let tab_list = {};
+let tab_list = [];
+
+/* chrome.runtime.onInstalled.addListener(() => {
+    chrome.tabs.query({}, function(tabs) {
+        tab_list[tabs.id] = tabs.url;
+    })
+    console.log(tab_list)
+});
+
+chrome.runtime.onStartup.addListener(() => {
+
+}); */
 
 function hasDuplicates(tab_id, tab_url) {
-    for (let tab_list_id in tab_list) {
-        if (tab_list_id != tab_id && tab_list[tab_list_id] === tab_url) {
-            return true
-        }
+    for (let i = 0; i < tab_list.length; i++) {
+        chrome.tabs.get(tab_list[i], function(tab){
+            if (tab.url === tab_url && tab.id != tab_id) {
+                return true;
+            }
+            return false;
+        });
     }
-    return false
 }
 
 function removeDuplicate(tab_id) {
@@ -14,33 +27,32 @@ function removeDuplicate(tab_id) {
 }
 
 function changeTab(tab_url){
-    for (let tab_list_id in tab_list) {
-        if(tab_url === tab_list[tab_list_id]){
-            chrome.tabs.update(parseInt(tab_list_id), {active: true})
-        }
+    let tab_id = getId(tab_url)
+    if (tab_id){
+        chrome.tabs.update(tab_id, {active: true})
     }
 }
 
 function moveTab(tab_url, openerTab){
-    console.log(tab_url,openerTab)
-    for (let tab_list_id in tab_list){
-        if (tab_url === tab_list[tab_list_id]){
-            console.log(chrome.tabs.get(openerTab, function(tab) {
-                chrome.tabs.move(parseInt(tab_list_id), {index: tab.index+1})
-            }))
-        }
-    }
+    let tab_id = getId(tab_url)
+    chrome.tabs.get(openerTab, function(tab) {
+        chrome.tabs.move(tab_id, {index: tab.index+1})
+    });
 }
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    console.log(tabId, tab.url, changeInfo, tab.openerTabId);
+    //console.log(tabId, tab_list, tab.url)
     if (changeInfo.url) {
         return
     }
+    console.log(tab_list)
     if (!hasDuplicates(tabId, tab.url)) {
-        tab_list[tabId] = tab.url;
+        if(!tab_list.includes(tabId)){
+            tab_list.push(tabId);
+        }
         return
     }
+    console.log(tab_list)
     removeDuplicate(tabId)
     if(!tab.openerTabId){
         changeTab(tab.url)
@@ -50,7 +62,5 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 })
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-    if(tab_list[tabId]){
-        delete tab_list[tabId]
-    }
+    tab_list.splice(1, tabId)
 })
