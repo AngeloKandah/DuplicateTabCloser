@@ -2,7 +2,7 @@
   "name": "Duplicate Tab Deleter",
   "description": "Removes duplicate tabs",
   "version": "1.0",
-  "manifest_version": 2,
+  "manifest_version": 3,
   "background": {
     "service_worker": "background.js"
   },
