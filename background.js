@@ -1,72 +1,85 @@
-const tab_list = [];
+let tabList = [];
 
-chrome.runtime.onInstalled.addListener(initExtension);
-
-chrome.runtime.onStartup.addListener(initExtension);
-
-function initExtension() {
-    initTabList();
+async function initExtension() {
+    tabList = await initTabList()
 }
 
-async function initTabList(){
-    const promisifiedTabList = chrome.tabs.query({});
-    const infoOfAllTabs = await promisifiedTabList
-    tab_list = infoOfAllTabs.map(({ id }) => id)
-    return
+async function initTabList() {
+    const infoOfAllTabs = await chrome.tabs.query({});
+    return await removeAllDuplicates(await infoOfAllTabs.map(({ id }) => id));
 }
 
-function getTabListInfo() {
-    const promisifedTabInfo = tab_list.map(id => chrome.tabs.get(id)); //Converting every tabId into the tab's info as a promise
+async function removeAllDuplicates(listOfAllTabs) {
+    const tabs = await getTabListInfo(listOfAllTabs);
+    const tabsWithoutDups = []
+    tabs.filter(({ url, id }) => {
+        return tabsWithoutDups.includes(url) ? removeTab(id) : tabsWithoutDups.push(url);
+    })
+    return tabs.map(({ id }) => id)
+}
+
+function getTabListInfo(tabs = tabList) {
+    const promisifedTabInfo = tabs.map(id => chrome.tabs.get(id)); //Converting every tabId into the tab's info as a promise
     return Promise.all(promisifedTabInfo)
 }
 
-async function hasDuplicates(tab_id, tab_url) {
+async function hasDuplicates(tabId, tabUrl, tabWinId) {
     const tabListInfo = await getTabListInfo()
-    return tabListInfo.reduce((acc, { url, id }) => {
-        return acc || (url === tab_url && id != tab_id)
+    return tabListInfo.reduce((acc, { url, id, windowId }) => {
+        return acc || (url === tabUrl && id != tabId && windowId === tabWinId)
     }, false)
 }
 
-async function getOpenedTabId(tabUrl) {
+async function getTabId(tabUrl) {
     const tabListInfo = await getTabListInfo()
     const { id: tabId } = tabListInfo.find(({ url }) => url === tabUrl)
     return tabId
 }
 
-function removeDuplicate(tab_id) {
-    chrome.tabs.remove(tab_id)
-    tab_list = tab_list.filter(id => id !== tab_id)
-    return
+function removeTab(tabId) {
+    chrome.tabs.remove(tabId)
+    tabList = tabList.filter(id => id !== tabId)
 }
 
-function changeTab(tab_id) {
-    chrome.tabs.update(tab_id, { active: true })
-    return
+function changeTab(tabId) {
+    chrome.tabs.update(tabId, { active: true })
 }
 
-/* function moveTab(tab_id, openerTab) {
-    chrome.tabs.get(openerTab, function (tab) {
-        chrome.tabs.move(tab_id, { index: tab.index + 1 })
-    });
-} */
+function moveTab(tabPosition, tabId) {
+    chrome.tabs.move(tabId, { index: tabPosition + 1 })
+}
 
-async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId }) {
-    if (changeInfo.url) {
-        return
+async function getTabPosition(tabId) {
+    const { index: tabPosition } = await chrome.tabs.get(tabId)
+    console.log(tabPosition)
+    return tabPosition
+}
+
+async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId: tabWinId }) {
+    if (changeInfo.url) return
+    if (!tabList.includes(tabId)) {
+        tabList.push(tabId);
     }
-    if (!tab_list.includes(tabId)) {
-        tab_list.push(tabId);
-    }
-    const duplicateCheck = await hasDuplicates(tabId, tabUrl)
+    const duplicateCheck = await hasDuplicates(tabId, tabUrl, tabWinId)
     if (duplicateCheck) {
-        removeDuplicate(tabId)
-        const alreadyOpenedTabId = await getOpenedTabId(tabUrl)
+        const alreadyOpenedTabId = await getTabId(tabUrl);
+        removeTab(tabId)
         changeTab(alreadyOpenedTabId)
+        if (openerTabId) {
+            const tabPosition = await getTabPosition(openerTabId)
+            moveTab(tabPosition, alreadyOpenedTabId);
+        }
     }
 }
+
+chrome.runtime.onInstalled.addListener(initExtension);
+
+chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-    tab_list.splice(1, tabId)
+    if (tabList.includes(tabId)) {
+        tabList = tabList.filter(id => id !== tabId)
+    }
 })
 
 chrome.tabs.onUpdated.addListener(onUpdate)
