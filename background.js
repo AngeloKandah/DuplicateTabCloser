@@ -1,12 +1,26 @@
 let tabList = [];
+let moveTabs;
+let affectWindows;
+let affectTabGroups;
+
 
 async function initExtension() {
+    await initOptions();
+    //({moveTabs, affectWindows, affectTabGroups}) = await initOptions()
     tabList = await initTabList()
 }
 
 async function initTabList() {
     const infoOfAllTabs = await chrome.tabs.query({});
-    return await removeAllDuplicates(await infoOfAllTabs.map(({ id }) => id));
+    return removeAllDuplicates(infoOfAllTabs.map(({ id }) => id));
+}
+
+async function initOptions() {
+    chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
+        moveTabs = data.moveTabs ?? true
+        affectWindows = data.affectWindows ?? false
+        affectTabGroups = data.affectTabGroups ?? false
+    }) 
 }
 
 async function removeAllDuplicates(listOfAllTabs) {
@@ -51,11 +65,11 @@ function moveTab(tabPosition, tabId) {
 
 async function getTabPosition(tabId) {
     const { index: tabPosition } = await chrome.tabs.get(tabId)
-    console.log(tabPosition)
     return tabPosition
 }
 
 async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId: tabWinId }) {
+    console.log(moveTabs)
     if (changeInfo.url) return
     if (!tabList.includes(tabId)) {
         tabList.push(tabId);
@@ -65,12 +79,22 @@ async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId:
         const alreadyOpenedTabId = await getTabId(tabUrl);
         removeTab(tabId)
         changeTab(alreadyOpenedTabId)
-        if (openerTabId) {
+        if (openerTabId && moveTabs) {
             const tabPosition = await getTabPosition(openerTabId)
             moveTab(tabPosition, alreadyOpenedTabId);
         }
     }
 }
+
+function updateOptions(changes) {
+    chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
+        moveTabs = data.moveTabs ?? true
+        affectWindows = data.affectWindows ?? false
+        affectTabGroups = data.affectTabGroups ?? false
+    }) 
+}
+
+chrome.storage.onChanged.addListener(updateOptions)
 
 chrome.runtime.onInstalled.addListener(initExtension);
 

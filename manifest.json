@@ -6,7 +6,8 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": [ 
+  "options_page": "options.html",
+  "permissions": [
     "tabs",
     "storage"
   ]
