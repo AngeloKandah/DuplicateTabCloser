@@ -1,24 +1,49 @@
-chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
+chrome.storage.local.get(['moveTabs', 'effectWindows', 'effectTabGroups', 'exclusionArray'], (data) => {
     document.getElementById('moveTabs').checked = data.moveTabs ?? true
-    document.getElementById('affectWindows').checked = data.affectWindows ?? false
-    document.getElementById('affectTabGroups').checked = data.affectTabGroups ?? false
+    document.getElementById('effectWindows').checked = data.effectWindows ?? false
+    document.getElementById('effectTabGroups').checked = data.effectTabGroups ?? false
+    createHTMLList(data.exclusionArray ?? [])
 })
 
-const submit = document.querySelector('#submit');
+const submit = document.getElementById('submit');
+const exclusionBox = document.getElementById('exclusionArray')
+
+function isPropertyEnabled(id) {
+    return document.getElementById(id).checked
+}
+
+function createHTMLList(exclusionArray){
+    let htmlList = ""
+    exclusionArray.forEach(item => { //could do a reduce here?
+        htmlList += `<li>${item}</li>`;
+    })
+    document.getElementById('exclusions').innerHTML = htmlList
+}
 
 function submitChanges() {
-    let moveTabs = document.getElementById('moveTabs').checked;
-    chrome.storage.local.set({ moveTabs })
-    let affectWindows = document.getElementById('affectWindows').checked;
-    chrome.storage.local.set({ affectWindows })
-    let affectTabGroups = document.getElementById('affectTabGroups').checked;
-    chrome.storage.local.set({ affectTabGroups })
+    const settingFields = [
+        'moveTabs',
+        'effectWindows',
+        'effectTabGroups'
+    ]
+    const [moveTabs, effectWindows, effectTabGroups] = settingFields.map(isPropertyEnabled)
+    chrome.storage.local.set({ moveTabs, effectWindows, effectTabGroups })
 }
 
 submit.addEventListener('click', () => {
     submitChanges();
 })
 
-//Treat all windows as one list option
-//Tab groups option
-//Move tabs from middle click
+exclusionBox.addEventListener('keyup', event => {
+    if (event.code === 'Enter') {
+        if(/\s/.test(exclusionBox.value) || !exclusionBox.value){
+            return
+        }
+        chrome.storage.local.get({ exclusionArray: [] }, (data) => {
+            exclusionArray = [...data.exclusionArray];
+            exclusionArray.push(exclusionBox.value)
+            chrome.storage.local.set({ exclusionArray })
+            createHTMLList(exclusionArray)
+        })
+    }
+})

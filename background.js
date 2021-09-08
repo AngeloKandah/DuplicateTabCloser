@@ -1,12 +1,12 @@
 let tabList = [];
+let exclusionArray;
 let moveTabs;
-let affectWindows;
-let affectTabGroups;
+let effectWindows;
+let effectTabGroups;
 
 
 async function initExtension() {
     await initOptions();
-    //({moveTabs, affectWindows, affectTabGroups}) = await initOptions()
     tabList = await initTabList()
 }
 
@@ -16,10 +16,11 @@ async function initTabList() {
 }
 
 async function initOptions() {
-    chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
+    chrome.storage.local.get(['moveTabs', 'effectWindows', 'effectTabGroups', 'exclusionArray'], (data) => {
         moveTabs = data.moveTabs ?? true
-        affectWindows = data.affectWindows ?? false
-        affectTabGroups = data.affectTabGroups ?? false
+        effectWindows = data.effectWindows ?? false
+        effectTabGroups = data.effectTabGroups ?? false
+        exclusionArray = data.exclusionArray ?? []
     }) 
 }
 
@@ -69,7 +70,6 @@ async function getTabPosition(tabId) {
 }
 
 async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId: tabWinId }) {
-    console.log(moveTabs)
     if (changeInfo.url) return
     if (!tabList.includes(tabId)) {
         tabList.push(tabId);
@@ -87,10 +87,11 @@ async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId:
 }
 
 function updateOptions(changes) {
-    chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
+    chrome.storage.local.get(['moveTabs', 'effectWindows', 'effectTabGroups', 'exclusionArray'], (data) => {
         moveTabs = data.moveTabs ?? true
-        affectWindows = data.affectWindows ?? false
-        affectTabGroups = data.affectTabGroups ?? false
+        effectWindows = data.effectWindows ?? false
+        effectTabGroups = data.effectTabGroups ?? false
+        exclusionArray = data.exclusionArray ?? []
     }) 
 }
 
