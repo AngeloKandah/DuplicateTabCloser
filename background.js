@@ -1,110 +1,147 @@
-let tabList = [];
-let exclusionArray;
-let moveTabs;
-let effectWindows;
-let effectTabGroups;
-
+let tabArray = [];
+let exclusionArrayOption;
+let moveTabsOption;
+let effectWindowsOption;
+let effectTabGroupsOption;
 
 async function initExtension() {
-    await initOptions();
-    tabList = await initTabList()
+    await setOptionsValues();
+    tabArray = await createTabList();
 }
 
-async function initTabList() {
+async function createTabList() {
     const infoOfAllTabs = await chrome.tabs.query({});
     return removeAllDuplicates(infoOfAllTabs.map(({ id }) => id));
 }
 
-async function initOptions() {
-    chrome.storage.local.get(['moveTabs', 'effectWindows', 'effectTabGroups', 'exclusionArray'], (data) => {
-        moveTabs = data.moveTabs ?? true
-        effectWindows = data.effectWindows ?? false
-        effectTabGroups = data.effectTabGroups ?? false
-        exclusionArray = data.exclusionArray ?? []
-    }) 
+async function setOptionsValues() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(
+            ["moveTabs", "effectWindows", "effectTabGroups", "exclusionArray"],
+            ({
+                moveTabs = true,
+                effectWindows = false,
+                effectTabGroups = false,
+                exclusionArray = [],
+            }) => {
+                moveTabsOption = moveTabs;
+                effectWindowsOption = effectWindows;
+                effectTabGroupsOption = effectTabGroups;
+                exclusionArrayOption = exclusionArray;
+                resolve({
+                    moveTabsOption,
+                    effectWindowsOption,
+                    effectTabGroupsOption,
+                    exclusionArrayOption,
+                });
+            }
+        );
+    });
 }
+
+//computed property and templatte literals
 
 async function removeAllDuplicates(listOfAllTabs) {
     const tabs = await getTabListInfo(listOfAllTabs);
-    const tabsWithoutDups = []
+    const tabsWithoutDups = [];
+    /* tabs.reduce((acc, { url, id }) => {
+        acc[url] = id;
+        return acc;
+    }, {}); */
     tabs.filter(({ url, id }) => {
-        return tabsWithoutDups.includes(url) ? removeTab(id) : tabsWithoutDups.push(url);
-    })
-    return tabs.map(({ id }) => id)
+        return tabsWithoutDups.includes(url)
+            ? closeChromeTab(id)
+            : tabsWithoutDups.push(url);
+    });
+    return tabs.map(({ id }) => id);
 }
 
-function getTabListInfo(tabs = tabList) {
-    const promisifedTabInfo = tabs.map(id => chrome.tabs.get(id)); //Converting every tabId into the tab's info as a promise
-    return Promise.all(promisifedTabInfo)
+function getTabListInfo(tabs = tabArray) {
+    const promisifedTabInfo = tabs.map((id) => chrome.tabs.get(id)); //Converting every tabId into the tab's info as a promise
+    return Promise.all(promisifedTabInfo);
 }
 
-async function hasDuplicates(tabId, tabUrl, tabWinId) {
-    const tabListInfo = await getTabListInfo()
-    return tabListInfo.reduce((acc, { url, id, windowId }) => {
-        return acc || (url === tabUrl && id != tabId && windowId === tabWinId)
-    }, false)
+async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
+    const tabListInfo = await getTabListInfo();
+    return tabListInfo.reduce((acc, { url, id, windowId, groupId }) => {
+        return (
+            acc ||
+            (url === tabUrl &&
+                id != tabId &&
+                windowId === (effectWindowsOption ? windowId : tabWinId) &&
+                groupId === (effectTabGroupsOption ? groupId : tabGroupId) &&
+                !isExcluded(tabUrl))
+        );
+    }, false);
+}
+
+function isExcluded(tabUrl) {
+    return exclusionArrayOption.reduce((acc, exclusion) => {
+        return acc || tabUrl.includes(exclusion)
+    }, false);
 }
 
 async function getTabId(tabUrl) {
-    const tabListInfo = await getTabListInfo()
-    const { id: tabId } = tabListInfo.find(({ url }) => url === tabUrl)
-    return tabId
+    const tabListInfo = await getTabListInfo();
+    const { id: tabId } = tabListInfo.find(({ url }) => url === tabUrl);
+    return tabId;
 }
 
-function removeTab(tabId) {
-    chrome.tabs.remove(tabId)
-    tabList = tabList.filter(id => id !== tabId)
+function closeChromeTab(tabId) {
+    chrome.tabs.remove(tabId);
 }
 
-function changeTab(tabId) {
-    chrome.tabs.update(tabId, { active: true })
+function changeChromeTabFocus(tabId) {
+    chrome.tabs.update(tabId, { active: true });
 }
 
-function moveTab(tabPosition, tabId) {
-    chrome.tabs.move(tabId, { index: tabPosition + 1 })
+function moveChromeTab(tabPosition, tabId) {
+    chrome.tabs.move(tabId, { index: tabPosition });
 }
 
 async function getTabPosition(tabId) {
-    const { index: tabPosition } = await chrome.tabs.get(tabId)
-    return tabPosition
+    const { index: tabPosition } = await chrome.tabs.get(tabId);
+    return tabPosition;
 }
 
-async function onUpdate(tabId, changeInfo, { url: tabUrl, openerTabId, windowId: tabWinId }) {
-    if (changeInfo.url) return
-    if (!tabList.includes(tabId)) {
-        tabList.push(tabId);
+async function onUpdate(
+    tabId,
+    changeInfo,
+    { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
+) {
+    if (changeInfo.url) return; //When url is done being loaded/changing we know it is final one.
+    if (changeInfo.status === "unloaded") return;
+    if (!tabArray.includes(tabId)) {
+        tabArray.push(tabId);
     }
-    const duplicateCheck = await hasDuplicates(tabId, tabUrl, tabWinId)
+    const duplicateCheck = await hasDuplicates(
+        tabId,
+        tabUrl,
+        tabWinId,
+        tabGroupId
+    );
     if (duplicateCheck) {
         const alreadyOpenedTabId = await getTabId(tabUrl);
-        removeTab(tabId)
-        changeTab(alreadyOpenedTabId)
-        if (openerTabId && moveTabs) {
-            const tabPosition = await getTabPosition(openerTabId)
-            moveTab(tabPosition, alreadyOpenedTabId);
+        closeChromeTab(tabId);
+        tabArray = tabArray.filter((id) => id !== tabId);
+        changeChromeTabFocus(alreadyOpenedTabId);
+        if (openerTabId && moveTabsOption) {
+            const tabPosition = await getTabPosition(openerTabId);
+            moveChromeTab(tabPosition, alreadyOpenedTabId);
         }
     }
 }
 
-function updateOptions(changes) {
-    chrome.storage.local.get(['moveTabs', 'effectWindows', 'effectTabGroups', 'exclusionArray'], (data) => {
-        moveTabs = data.moveTabs ?? true
-        effectWindows = data.effectWindows ?? false
-        effectTabGroups = data.effectTabGroups ?? false
-        exclusionArray = data.exclusionArray ?? []
-    }) 
-}
-
-chrome.storage.onChanged.addListener(updateOptions)
+chrome.storage.onChanged.addListener(setOptionsValues);
 
 chrome.runtime.onInstalled.addListener(initExtension);
 
 chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-    if (tabList.includes(tabId)) {
-        tabList = tabList.filter(id => id !== tabId)
+    if (tabArray.includes(tabId)) {
+        tabArray = tabArray.filter((id) => id !== tabId);
     }
-})
+});
 
-chrome.tabs.onUpdated.addListener(onUpdate)
+chrome.tabs.onUpdated.addListener(onUpdate);
