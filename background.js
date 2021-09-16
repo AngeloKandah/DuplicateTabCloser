@@ -1,11 +1,11 @@
 let tabArray = [];
-let exclusionArrayOption;
+let exclusionArrayOption = [];
 let moveTabsOption;
 let effectWindowsOption;
 let effectTabGroupsOption;
 
 async function initExtension() {
-    await setOptionsValues();
+    setOptionsValues();
     tabArray = await createTabList();
 }
 
@@ -14,7 +14,7 @@ async function createTabList() {
     return removeAllDuplicates(infoOfAllTabs.map(({ id }) => id));
 }
 
-async function setOptionsValues() {
+function setOptionsValues() {
     return new Promise((resolve) => {
         chrome.storage.local.get(
             ["moveTabs", "effectWindows", "effectTabGroups", "exclusionArray"],
@@ -76,9 +76,10 @@ async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
 }
 
 function isExcluded(tabUrl) {
-    return exclusionArrayOption.reduce((acc, exclusion) => {
-        return acc || tabUrl.includes(exclusion)
-    }, false);
+    return exclusionArrayOption.some(exclusion => {
+        const regexedExclusion = new RegExp(exclusion)
+        return regexedExclusion.test(tabUrl);
+    })
 }
 
 async function getTabId(tabUrl) {
@@ -95,8 +96,11 @@ function changeChromeTabFocus(tabId) {
     chrome.tabs.update(tabId, { active: true });
 }
 
-function moveChromeTab(tabPosition, tabId) {
-    chrome.tabs.move(tabId, { index: tabPosition });
+async function moveChromeTab(tabPosition, tabId) {
+    const { index: position } = await chrome.tabs.get(tabId);
+    tabPosition > position
+        ? chrome.tabs.move(tabId, { index: tabPosition })
+        : chrome.tabs.move(tabId, { index: tabPosition + 1 });
 }
 
 async function getTabPosition(tabId) {
@@ -127,7 +131,7 @@ async function onUpdate(
         changeChromeTabFocus(alreadyOpenedTabId);
         if (openerTabId && moveTabsOption) {
             const tabPosition = await getTabPosition(openerTabId);
-            moveChromeTab(tabPosition, alreadyOpenedTabId);
+            await moveChromeTab(tabPosition, alreadyOpenedTabId);
         }
     }
 }
