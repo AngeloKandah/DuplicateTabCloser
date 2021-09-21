@@ -4,6 +4,8 @@ let moveTabsOption;
 let effectWindowsOption;
 let effectTabGroupsOption;
 
+//make options an object, maybe redefine tabArray to not be global.
+
 async function initExtension() {
     setOptionsValues();
     tabArray = await createTabList();
@@ -15,31 +17,28 @@ async function createTabList() {
 }
 
 function setOptionsValues() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get(
-            ["moveTabs", "effectWindows", "effectTabGroups", "exclusionArray"],
-            ({
-                moveTabs = true,
-                effectWindows = false,
-                effectTabGroups = false,
-                exclusionArray = [],
-            }) => {
-                moveTabsOption = moveTabs;
-                effectWindowsOption = effectWindows;
-                effectTabGroupsOption = effectTabGroups;
-                exclusionArrayOption = exclusionArray;
-                resolve({
-                    moveTabsOption,
-                    effectWindowsOption,
-                    effectTabGroupsOption,
-                    exclusionArrayOption,
-                });
-            }
-        );
-    });
+    chrome.storage.local.get(
+        ["moveTabs", "effectWindows", "effectTabGroups", "exclusionArray"],
+        ({
+            moveTabs = true,
+            effectWindows = false,
+            effectTabGroups = false,
+            exclusionArray = [],
+        }) => {
+            moveTabsOption = moveTabs;
+            effectWindowsOption = effectWindows;
+            effectTabGroupsOption = effectTabGroups;
+            exclusionArrayOption = exclusionArray;
+        }
+    );
 }
 
-//computed property and templatte literals
+//computed property and template literals
+//bug where it only deletes 'new tab' when doing 'duplicate' otherwise doesn't work, 
+//fixes on extension restart
+
+//change into chrome.tabs.query, query for all tabs with specific tabUrl, if tabId is greater
+//than others, delete the tab and move it to the found tab id.
 
 async function removeAllDuplicates(listOfAllTabs) {
     const tabs = await getTabListInfo(listOfAllTabs);
@@ -76,10 +75,10 @@ async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
 }
 
 function isExcluded(tabUrl) {
-    return exclusionArrayOption.some(exclusion => {
-        const regexedExclusion = new RegExp(exclusion)
+    return exclusionArrayOption.some((exclusion) => {
+        const regexedExclusion = new RegExp(exclusion);
         return regexedExclusion.test(tabUrl);
-    })
+    });
 }
 
 async function getTabId(tabUrl) {
@@ -115,6 +114,7 @@ async function onUpdate(
 ) {
     if (changeInfo.url) return; //When url is done being loaded/changing we know it is final one.
     if (changeInfo.status === "unloaded") return;
+    console.log(tabArray)
     if (!tabArray.includes(tabId)) {
         tabArray.push(tabId);
     }
