@@ -1,20 +1,25 @@
 //chrome.storage.local.clear();
 chrome.storage.local.get(
-    ["moveTabs", "effectWindows", "effectTabGroups", "exclusionArray"],
+    ["options", "exclusionArray"],
     ({
-        moveTabs = true,
-        effectWindows = false,
-        effectTabGroups = false,
+        options = {
+            moveTabs: true,
+            effectWindows: false,
+            effectTabGroups: false,
+        },
         exclusionArray = [],
     }) => {
+        const { moveTabs, effectWindows, effectTabGroups } = options;
         document.getElementById("moveTabs").checked = moveTabs;
         document.getElementById("effectWindows").checked = effectWindows;
         document.getElementById("effectTabGroups").checked = effectTabGroups;
         createHTMLList(exclusionArray);
         chrome.storage.local.set({
-            moveTabs,
-            effectWindows,
-            effectTabGroups,
+            options: {
+                moveTabs,
+                effectWindows,
+                effectTabGroups,
+            },
             exclusionArray,
         });
     }
@@ -29,7 +34,8 @@ function isPropertyEnabled(id) {
 
 function createHTMLList(exclusionArray) {
     const htmlList = exclusionArray.reduce(
-        (acc, item) => `${acc}<li>${item}</li>`,
+        (acc, item) =>
+            `${acc}<li>${item}</li>`,
         ""
     );
     document.getElementById("exclusions").innerHTML = htmlList;
@@ -40,7 +46,9 @@ function submitChanges() {
     const settingFields = ["moveTabs", "effectWindows", "effectTabGroups"];
     const [moveTabs, effectWindows, effectTabGroups] =
         settingFields.map(isPropertyEnabled);
-    chrome.storage.local.set({ moveTabs, effectWindows, effectTabGroups });
+    chrome.storage.local.set({
+        options: { moveTabs, effectWindows, effectTabGroups },
+    });
 }
 
 submit.addEventListener("click", () => {
