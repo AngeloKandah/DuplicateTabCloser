@@ -1,24 +1,79 @@
-chrome.storage.local.get(['moveTabs', 'affectWindows', 'affectTabGroups'], (data) => {
-    document.getElementById('moveTabs').checked = data.moveTabs ?? true
-    document.getElementById('affectWindows').checked = data.affectWindows ?? false
-    document.getElementById('affectTabGroups').checked = data.affectTabGroups ?? false
-})
+//chrome.storage.local.clear();
+chrome.storage.local.get(
+    ["options", "exclusionArray"],
+    ({
+        options = {
+            moveTabs: true,
+            effectWindows: false,
+            effectTabGroups: false,
+        },
+        exclusionArray = [],
+    }) => {
+        const { moveTabs, effectWindows, effectTabGroups } = options;
+        document.getElementById("moveTabs").checked = moveTabs;
+        document.getElementById("effectWindows").checked = effectWindows;
+        document.getElementById("effectTabGroups").checked = effectTabGroups;
+        createHTMLList(exclusionArray);
+        chrome.storage.local.set({
+            options: {
+                moveTabs,
+                effectWindows,
+                effectTabGroups,
+            },
+            exclusionArray,
+        });
+    }
+);
 
-const submit = document.querySelector('#submit');
+const submit = document.getElementById("submit");
+const exclusionBox = document.getElementById("exclusionArray");
 
-function submitChanges() {
-    let moveTabs = document.getElementById('moveTabs').checked;
-    chrome.storage.local.set({ moveTabs })
-    let affectWindows = document.getElementById('affectWindows').checked;
-    chrome.storage.local.set({ affectWindows })
-    let affectTabGroups = document.getElementById('affectTabGroups').checked;
-    chrome.storage.local.set({ affectTabGroups })
+function isPropertyEnabled(id) {
+    return document.getElementById(id).checked;
 }
 
-submit.addEventListener('click', () => {
-    submitChanges();
-})
+function createHTMLList(exclusionArray) {
+    const htmlList = exclusionArray.reduce(
+        (acc, item) =>
+            `${acc}<li>${item}</li>`,
+        ""
+    );
+    document.getElementById("exclusions").innerHTML = htmlList;
+    exclusionBox.value = "";
+}
 
-//Treat all windows as one list option
-//Tab groups option
-//Move tabs from middle click
+function submitChanges() {
+    const settingFields = ["moveTabs", "effectWindows", "effectTabGroups"];
+    const [moveTabs, effectWindows, effectTabGroups] =
+        settingFields.map(isPropertyEnabled);
+    chrome.storage.local.set({
+        options: { moveTabs, effectWindows, effectTabGroups },
+    });
+}
+
+submit.addEventListener("click", () => {
+    submitChanges();
+});
+
+exclusionBox.addEventListener("keyup", (event) => {
+    if (event.code === "Enter") {
+        if (/\s/.test(exclusionBox.value) || !exclusionBox.value) {
+            return;
+        }
+        chrome.storage.local.get(
+            { exclusionArray: [] },
+            ({ exclusionArray: oldExclusionArray }) => {
+                if (oldExclusionArray.includes(exclusionBox.value)) {
+                    exclusionBox.value = "";
+                    return;
+                }
+                const exclusionArray = [
+                    ...oldExclusionArray,
+                    exclusionBox.value,
+                ];
+                chrome.storage.local.set({ exclusionArray });
+                createHTMLList(exclusionArray);
+            }
+        );
+    }
+});

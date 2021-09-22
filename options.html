@@ -7,6 +7,7 @@
     </style>
 <head>
     <title>Options</title>
+    <script src="options.js" defer></script>
 </head>
 
 <body>
@@ -23,21 +24,31 @@
     <div>
         <label>
             <span>
-                <input type="checkbox" id="affectWindows">
+                <input type="checkbox" id="effectWindows">
             </span>
             <span class="optionsText">
-                Affect all windows
+                Effect all windows
             </span>
         </label>
     </div>
     <div>
         <label>
             <span>
-                <input type="checkbox" id="affectTabGroups">
+                <input type="checkbox" id="effectTabGroups">
             </span>
             <span class="optionsText">
-                Affect all tab groups
+                Effect all tab groups
             </span>
+        </label>
+    </div>
+    <div>
+        <label>
+            <span class="optionsText">
+                Add to Exclusion List
+            </span>
+            <input type="text" id="exclusionArray" placeholder="Enter new Exclusion">
+            <br>
+            <ul class="optionsText" id="exclusions"></ul>
         </label>
     </div>
     <div>
@@ -46,6 +57,5 @@
         </label>
     </div>
 </body>
-<script src="options.js"></script>
 
 </html>
