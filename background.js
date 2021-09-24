@@ -1,31 +1,22 @@
-let exclusionArrayOption = [];
-let moveTabsOption;
-let effectWindowsOption;
-let effectTabGroupsOption;
+let options = {};
+const defaultOptions = {
+    moveTabs: true,
+    effectWindows: false,
+    effectTabGroups: false,
+    exclusions: [],
+}
 
 async function initExtension() {
-    await setOptionsValues();
+    getOptions();
     removeAllDuplicates();
 }
 
-async function setOptionsValues() {
-    await chrome.storage.local.get(
-        ['options', 'exclusionArray'],
-        ({
-            options = {
-                moveTabs: true,
-                effectWindows: false,
-                effectTabGroups: false,
-            },
-            exclusionArray = [],
-        }) => {
-            const { moveTabs, effectWindows, effectTabGroups } = options;
-            moveTabsOption = moveTabs;
-            effectWindowsOption = effectWindows;
-            effectTabGroupsOption = effectTabGroups;
-            exclusionArrayOption = exclusionArray;
-        }
-    );
+async function getOptions() {
+    const { options } = await getLocalStorageKey('options');
+    if (!options) {
+        setLocalStorageValue({ options: defaultOptions });
+    }
+    this.options = options || defaultOptions;
 }
 
 async function removeAllDuplicates() {
@@ -33,36 +24,36 @@ async function removeAllDuplicates() {
     const tabsWithoutDups = [];
     for (const { id, url, windowId, groupId } of tabs) {
         tabsWithoutDups.includes(url) &&
-        (await hasDuplicates(id, url, windowId, groupId))
+            (await hasDuplicates(id, url, windowId, groupId))
             ? closeChromeTab(id)
             : tabsWithoutDups.push(url);
     }
 }
 
 function constructUrl(url) {
-    const urlFromChrome = new URL(url);
-    const urlWithoutHash = new URL(
-        `${urlFromChrome.origin}${urlFromChrome.pathname}${urlFromChrome.search}`
-    );
-    return urlWithoutHash.toString();
+    const hashlessURL = new URL(url);
+    hashlessURL.hash = '';
+    return hashlessURL.toString();
 }
 
 async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
+    const { effectTabGroups, effectWindows } = options;
     const queriedTabs = await chrome.tabs.query({ url: constructUrl(tabUrl) });
     return queriedTabs.reduce((acc, { url, id, windowId, groupId }) => {
         return (
             acc ||
             (url === tabUrl &&
                 id !== tabId &&
-                windowId === (effectWindowsOption ? windowId : tabWinId) &&
-                groupId === (effectTabGroupsOption ? groupId : tabGroupId) &&
+                windowId === (effectWindows ? windowId : tabWinId) &&
+                groupId === (effectTabGroups ? groupId : tabGroupId) &&
                 !isExcluded(tabUrl))
         );
     }, false);
 }
 
 function isExcluded(tabUrl) {
-    return exclusionArrayOption.some((exclusion) => {
+    const { exclusions } = options;
+    return exclusions.some(exclusion => {
         const regexedExclusion = new RegExp(exclusion);
         return regexedExclusion.test(tabUrl);
     });
@@ -115,14 +106,42 @@ async function onUpdate(
         closeChromeTab(tabId);
         const alreadyOpenedTabId = await getTabId(tabUrl, tabWinId, tabGroupId);
         changeChromeTabFocus(alreadyOpenedTabId);
-        if (openerTabId && moveTabsOption) {
+        if (openerTabId && options.moveTabs) {
             const tabPosition = await getTabPosition(openerTabId);
             await moveChromeTab(tabPosition, alreadyOpenedTabId);
         }
     }
 }
 
-chrome.storage.onChanged.addListener(setOptionsValues);
+/**
+ * Read from local storage in async instead of using callbacks
+ * Pass in a single string key or an array of keys to retrieve multiple values
+ * 
+ * @param {string|array<string>} key 
+ * @returns {object}
+ */
+const getLocalStorageKey = key => {
+    let storageKey = key;
+    if (typeof storageKey !== 'array') storageKey = [storageKey];
+
+    return new Promise((resolve, reject) => {
+        try {
+            chrome.storage.local.get(key, resolve)
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+/**
+ * Set an object in local storage to the given value
+ * Local Stoarge objects key is based on the Object key passed in
+ * @param {Object} val 
+ */
+const setLocalStorageValue = val => chrome.storage.local.set(val);
+
+
+chrome.storage.onChanged.addListener(getOptions);
 
 chrome.runtime.onInstalled.addListener(initExtension);
 
