@@ -1,4 +1,3 @@
-//chrome.storage.local.clear();
 chrome.storage.local.get(
     ["options", "exclusionArray"],
     ({
@@ -27,19 +26,46 @@ chrome.storage.local.get(
 
 const submit = document.getElementById("submit");
 const exclusionBox = document.getElementById("exclusionArray");
+const exclusionList = document.getElementById("exclusions");
 
 function isPropertyEnabled(id) {
     return document.getElementById(id).checked;
 }
 
 function createHTMLList(exclusionArray) {
-    const htmlList = exclusionArray.reduce(
-        (acc, item) =>
-            `${acc}<li>${item}</li>`,
-        ""
-    );
-    document.getElementById("exclusions").innerHTML = htmlList;
+    exclusionArray.forEach((item) => {
+        addToHTMLList(item);
+
+    });
+}
+
+function addToHTMLList(item) {
+    const listItem = document.createElement("li");
+    listItem.textContent = `${item}`;
+    exclusionList.appendChild(listItem);
+    const deleteButton = createDeleteButton();
+    listItem.appendChild(deleteButton);
     exclusionBox.value = "";
+}
+
+function createDeleteButton() {
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.className = "DeleteBtn";
+    deleteButton.addEventListener("click", () => {
+        const itemToRemove = deleteButton.parentElement;
+        itemToRemove.remove();
+        chrome.storage.local.get(
+            { exclusionArray: [] },
+            ({ exclusionArray: oldExclusionArray }) => {
+                const exclusionArray = oldExclusionArray.filter(
+                    (item) => item !== itemToRemove.firstChild.data
+                );
+                chrome.storage.local.set({ exclusionArray });
+            }
+        );
+    });
+    return deleteButton;
 }
 
 function submitChanges() {
@@ -72,7 +98,7 @@ exclusionBox.addEventListener("keyup", (event) => {
                     exclusionBox.value,
                 ];
                 chrome.storage.local.set({ exclusionArray });
-                createHTMLList(exclusionArray);
+                addToHTMLList(exclusionBox.value);
             }
         );
     }

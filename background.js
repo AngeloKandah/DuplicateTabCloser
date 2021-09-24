@@ -5,7 +5,7 @@ let effectTabGroupsOption;
 
 async function initExtension() {
     setOptionsValues();
-    await removeAllDuplicates();
+    removeAllDuplicates();
 }
 
 function setOptionsValues() {
@@ -19,7 +19,7 @@ function setOptionsValues() {
             },
             exclusionArray = [],
         }) => {
-            const { moveTabs, effectWindows, effectTabGroups } = options
+            const { moveTabs, effectWindows, effectTabGroups } = options;
             moveTabsOption = moveTabs;
             effectWindowsOption = effectWindows;
             effectTabGroupsOption = effectTabGroups;
@@ -31,22 +31,20 @@ function setOptionsValues() {
 async function removeAllDuplicates() {
     const tabs = await chrome.tabs.query({});
     const tabsWithoutDups = [];
-    tabs.filter(({ url, id }) => {
-        return tabsWithoutDups.includes(url)
+    for (const { id, url, windowId, groupId } of tabs) {
+        tabsWithoutDups.includes(url) &&
+        (await hasDuplicates(id, url, windowId, groupId))
             ? closeChromeTab(id)
             : tabsWithoutDups.push(url);
-    });
+    }
 }
 
 function constructUrl(url) {
     const urlFromChrome = new URL(url);
-    if (urlFromChrome.hash){
-        const urlWithoutHash = new URL(
-            `${urlFromChrome.origin}${urlFromChrome.pathname}`
-        );
-        return urlWithoutHash.toString();
-    }
-    return urlFromChrome.href
+    const urlWithoutHash = new URL(
+        `${urlFromChrome.origin}${urlFromChrome.pathname}${urlFromChrome.search}`
+    );
+    return urlWithoutHash.toString();
 }
 
 async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
@@ -102,8 +100,7 @@ async function onUpdate(
     { url: loading, status },
     { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
 ) {
-    if (loading) return; //When url is done being loaded/changing we know it is final one.
-    if (status === "unloaded") return;
+    if (loading || status === "unloaded") return;
     const duplicateCheck = await hasDuplicates(
         tabId,
         tabUrl,
@@ -111,8 +108,8 @@ async function onUpdate(
         tabGroupId
     );
     if (duplicateCheck) {
-        const alreadyOpenedTabId = await getTabId(tabUrl);
         closeChromeTab(tabId);
+        const alreadyOpenedTabId = await getTabId(tabUrl);
         changeChromeTabFocus(alreadyOpenedTabId);
         if (openerTabId && moveTabsOption) {
             const tabPosition = await getTabPosition(openerTabId);
