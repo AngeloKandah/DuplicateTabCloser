@@ -52,7 +52,7 @@ async function hasDuplicates(tabId, tabUrl, tabWinId, tabGroupId) {
 }
 
 function isExcluded(tabUrl) {
-    const { exclusions } = options;
+    const { exclusions } = this.options;
     return exclusions.some(exclusion => {
         const regexedExclusion = new RegExp(exclusion);
         return regexedExclusion.test(tabUrl);
