@@ -4,13 +4,13 @@ let effectWindowsOption;
 let effectTabGroupsOption;
 
 async function initExtension() {
-    setOptionsValues();
+    await setOptionsValues();
     removeAllDuplicates();
 }
 
-function setOptionsValues() {
-    chrome.storage.local.get(
-        ["options", "exclusionArray"],
+async function setOptionsValues() {
+    await chrome.storage.local.get(
+        ['options', 'exclusionArray'],
         ({
             options = {
                 moveTabs: true,
@@ -68,10 +68,13 @@ function isExcluded(tabUrl) {
     });
 }
 
-async function getTabId(tabUrl) {
-    const [{ id: tabId }] = await chrome.tabs.query({
-        url: constructUrl(tabUrl),
-    });
+async function getTabId(tabUrl, tabWinId, tabGroupId) {
+    const queryParams = { url: constructUrl(tabUrl)};
+    if (!effectWindowsOption) {
+        queryParams['windowId'] = tabWinId;
+        queryParams['groupId'] = tabGroupId;
+    }
+    const [{ id: tabId }] = await chrome.tabs.query(queryParams);
     return tabId;
 }
 
@@ -100,7 +103,8 @@ async function onUpdate(
     { url: loading, status },
     { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
 ) {
-    if (loading || status === "unloaded") return;
+    if (loading || status === 'unloaded') return;
+    if (!moveTabsOption) setOptionsValues();
     const duplicateCheck = await hasDuplicates(
         tabId,
         tabUrl,
@@ -109,7 +113,7 @@ async function onUpdate(
     );
     if (duplicateCheck) {
         closeChromeTab(tabId);
-        const alreadyOpenedTabId = await getTabId(tabUrl);
+        const alreadyOpenedTabId = await getTabId(tabUrl, tabWinId, tabGroupId);
         changeChromeTabFocus(alreadyOpenedTabId);
         if (openerTabId && moveTabsOption) {
             const tabPosition = await getTabPosition(openerTabId);
