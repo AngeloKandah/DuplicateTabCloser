@@ -126,7 +126,7 @@ const getLocalStorageKey = key => {
 
     return new Promise((resolve, reject) => {
         try {
-            chrome.storage.local.get(key, resolve)
+            chrome.storage.local.get(storageKey, resolve)
         } catch (err) {
             reject(err);
         }
