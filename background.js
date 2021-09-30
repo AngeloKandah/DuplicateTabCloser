@@ -1,22 +1,20 @@
-let options = {};
-const defaultOptions = {
-    moveTabs: true,
-    effectWindows: false,
-    effectTabGroups: false,
-    exclusions: [],
-};
-
-async function initExtension() {
-    getOptions();
+function initExtension() {
     removeAllDuplicates();
 }
 
 async function getOptions() {
     const { options } = await getLocalStorageKey('options');
     if (!options) {
+        const defaultOptions = {
+            moveTabs: true,
+            effectWindows: false,
+            effectTabGroups: false,
+            exclusions: [],
+        };
         setLocalStorageValue({ options: defaultOptions });
+        return defaultOptions;
     }
-    this.options = options || defaultOptions;
+    return options;
 }
 
 async function removeAllDuplicates() {
@@ -37,8 +35,9 @@ function constructUrl(url) {
 }
 
 const hasDuplicates = async (tabId, tabUrl, tabWinId, tabGroupId) => {
-    const { effectTabGroups, effectWindows } = this.options;
+    const { effectTabGroups, effectWindows } = await getOptions();
     const queriedTabs = await chrome.tabs.query({ url: constructUrl(tabUrl) });
+    const excluded = await isExcluded(tabUrl);
     return queriedTabs.reduce((acc, { url, id, windowId, groupId }) => {
         return (
             acc ||
@@ -46,13 +45,13 @@ const hasDuplicates = async (tabId, tabUrl, tabWinId, tabGroupId) => {
                 id !== tabId &&
                 windowId === (effectWindows ? windowId : tabWinId) &&
                 groupId === (effectTabGroups ? groupId : tabGroupId) &&
-                !isExcluded(tabUrl))
+                !excluded)
         );
     }, false);
 };
 
-function isExcluded(tabUrl) {
-    const { exclusions } = this.options;
+async function isExcluded(tabUrl) {
+    const { exclusions } = await getOptions();
     return exclusions.some((exclusion) => {
         const regexedExclusion = new RegExp(exclusion);
         return regexedExclusion.test(tabUrl);
@@ -61,7 +60,8 @@ function isExcluded(tabUrl) {
 
 async function getTabId(tabUrl, tabWinId, tabGroupId) {
     const queryParams = { url: constructUrl(tabUrl) };
-    if (!this.options.effectWindows) {
+    const { effectWindows } = await getOptions();
+    if (effectWindows) {
         queryParams['windowId'] = tabWinId;
         queryParams['groupId'] = tabGroupId;
     }
@@ -95,7 +95,6 @@ async function onUpdate(
     { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
 ) {
     if (loading || status === 'unloaded') return;
-    if (this.options === {}) await getOptions();
     const duplicateCheck = await hasDuplicates(
         tabId,
         tabUrl,
@@ -106,12 +105,14 @@ async function onUpdate(
         closeChromeTab(tabId);
         const alreadyOpenedTabId = await getTabId(tabUrl, tabWinId, tabGroupId);
         changeChromeTabFocus(alreadyOpenedTabId);
-        if (openerTabId && this.options.moveTabs) {
+        const { moveTabs } = await getOptions();
+        if (openerTabId && moveTabs) {
             const tabPosition = await getTabPosition(openerTabId);
             await moveChromeTab(tabPosition, alreadyOpenedTabId);
         }
     }
 }
+
 
 /**
  * Read from local storage in async instead of using callbacks
@@ -120,7 +121,7 @@ async function onUpdate(
  * @param {string|array<string>} key
  * @returns {object}
  */
-const getLocalStorageKey = (key) => {
+const getLocalStorageKey = (key) => { //need to learn how to test
     let storageKey = key;
     if (typeof storageKey !== 'array') storageKey = [storageKey];
 
