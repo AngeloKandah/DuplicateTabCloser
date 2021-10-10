@@ -24,7 +24,7 @@ describe('constructUrl', () => {
 });
 
 describe('hasDuplicates', () => {
-    it('should return false', async () => {
+    it('should return false given it is the only tab open', async () => {
         const optionData = {
             options: {
                 moveTabs: true,
@@ -33,22 +33,224 @@ describe('hasDuplicates', () => {
                 exclusions: [],
             },
         };
-        const key = 'options';
         chrome.storage.local.get.mockImplementation((key, callback) => {
             callback(optionData);
         });
-        chrome.tabs.query.mockReturnValue([]);
+        chrome.tabs.query.mockReturnValue([
+            {
+                id: 1,
+                url: 'https://www.google.com/',
+                windowId: 1,
+                groupId: -1,
+            },
+        ]);
         const duplicateCheck = await hasDuplicates(
-            210,
+            1,
             'https://www.google.com/',
             1,
             -1
         );
         expect(duplicateCheck).toBe(false);
     });
+    it('should return true given two identical urls existing', async () => {
+        const optionData = {
+            options: {
+                moveTabs: true,
+                effectWindows: false,
+                effectTabGroups: false,
+                exclusions: [],
+            },
+        };
+        chrome.storage.local.get.mockImplementation((key, callback) => {
+            callback(optionData);
+        });
+        chrome.tabs.query.mockReturnValue([
+            {
+                id: 1,
+                url: 'https://www.google.com/',
+                windowId: 1,
+                groupId: -1,
+            },
+            {
+                id: 2,
+                url: 'https://www.google.com/',
+                windowId: 1,
+                groupId: -1,
+            },
+        ]);
+        const duplicateCheck = await hasDuplicates(
+            2,
+            'https://www.google.com/',
+            1,
+            -1
+        );
+        expect(duplicateCheck).toBe(true);
+    });
+    describe('exclusions', () => {
+        beforeEach(() => {
+            const optionData = {
+                options: {
+                    moveTabs: true,
+                    effectWindows: false,
+                    effectTabGroups: false,
+                    exclusions: ['google'],
+                },
+            };
+            chrome.storage.local.get.mockImplementation((key, callback) => {
+                callback(optionData);
+            });
+        })
+        it('should return false given two identical urls, but an exclusion', async () => {
+            chrome.tabs.query.mockReturnValue([
+                {
+                    id: 1,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+                {
+                    id: 2,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+            ]);
+            const duplicateCheck = await hasDuplicates(
+                2,
+                'https://www.google.com/',
+                1,
+                -1
+            );
+            expect(duplicateCheck).toBe(false);
+        })
+        it('should return false given no identical urls, but an exclusion', async () => {
+            chrome.tabs.query.mockReturnValue([
+                {
+                    id: 1,
+                    url: 'https://www.youtube.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+                {
+                    id: 2,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+            ]);
+            const duplicateCheck = await hasDuplicates(
+                2,
+                'https://www.google.com/',
+                1,
+                -1
+            );
+            expect(duplicateCheck).toBe(false);
+        })
+    })
+    describe('windowId is true', () => {
+        beforeEach(() => {
+            const optionData = {
+                options: {
+                    moveTabs: true,
+                    effectWindows: true,
+                    effectTabGroups: false,
+                    exclusions: [],
+                },
+            };
+            chrome.storage.local.get.mockImplementation((key, callback) => {
+                callback(optionData);
+            });
+        })
+        it('should return true given two identical urls but same windowId', async () => {
+            chrome.tabs.query.mockReturnValue([
+                {
+                    id: 1,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+                {
+                    id: 2,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+            ]);
+            const duplicateCheck = await hasDuplicates(
+                2,
+                'https://www.google.com/',
+                1,
+                -1
+            );
+            expect(duplicateCheck).toBe(true);
+        })
+        it('should return true given two identical urls but different windowIds', async () => {
+            chrome.tabs.query.mockReturnValue([
+                {
+                    id: 1,
+                    url: 'https://www.google.com/',
+                    windowId: 2,
+                    groupId: -1,
+                },
+                {
+                    id: 2,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+            ]);
+            const duplicateCheck = await hasDuplicates(
+                2,
+                'https://www.google.com/',
+                1,
+                -1
+            );
+            expect(duplicateCheck).toBe(true);
+        })
+        it('should return false given no identical urls but different windowIds', async () => {
+            chrome.tabs.query.mockReturnValue([
+                {
+                    id: 1,
+                    url: 'https://www.google.com/',
+                    windowId: 1,
+                    groupId: -1,
+                },
+                {
+                    id: 2,
+                    url: 'https://www.youtube.com/',
+                    windowId: 2,
+                    groupId: -1,
+                },
+            ]);
+            const duplicateCheck = await hasDuplicates(
+                2,
+                'https://www.youtube.com/',
+                2,
+                -1
+            );
+            expect(duplicateCheck).toBe(false);
+        })
+    })
 });
 
 describe('getOptions', () => {
+    beforeEach(() => {
+        const optionData = {
+            options: {
+                moveTabs: true,
+                effectWindows: false,
+                effectTabGroups: false,
+                exclusions: [],
+            },
+        };
+        chrome.storage.local.get.mockImplementation((key, callback) => {
+            if (key[0] === 'options') {
+                callback(optionData);
+            } else {
+                callback({});
+            }
+        });
+    });
     it('should return an object with options values', async () => {
         const opt = {
             moveTabs: true,
@@ -64,10 +266,6 @@ describe('getOptions', () => {
                 exclusions: [],
             },
         };
-        const key = 'options';
-        chrome.storage.local.get.mockImplementation((key, callback) => {
-            callback(optionData);
-        });
         const options = await getOptions();
         expect(options).toStrictEqual(opt);
     });

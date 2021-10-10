@@ -1,5 +1,5 @@
-import { chrome } from 'jest-chrome'
-
+/* import { chrome } from 'jest-chrome'
+ */
 function initExtension() {
     removeAllDuplicates();
 }
@@ -63,7 +63,7 @@ async function isExcluded(tabUrl) {
 async function getTabId(tabUrl, tabWinId, tabGroupId) {
     const queryParams = { url: constructUrl(tabUrl) };
     const { effectWindows } = await getOptions();
-    if (effectWindows) {
+    if (!effectWindows) {
         queryParams['windowId'] = tabWinId;
         queryParams['groupId'] = tabGroupId;
     }
@@ -79,6 +79,7 @@ function changeChromeTabFocus(tabId) {
     chrome.tabs.update(tabId, { active: true });
 }
 
+//Add (effectWindows, move tab to current window, and maintain position)
 async function moveChromeTab(tabPosition, tabId) {
     const { index: position } = await chrome.tabs.get(tabId);
     tabPosition + 1 > position
