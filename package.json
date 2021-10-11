@@ -14,12 +14,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AngeloKandah/DuplicateTabDeleter.git"
+    "url": "git+https://github.com/AngeloKandah/DuplicateTabCloser.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/AngeloKandah/DuplicateTabDeleter/issues"
+    "url": "https://github.com/AngeloKandah/DuplicateTabCloser/issues"
   },
-  "homepage": "https://github.com/AngeloKandah/DuplicateTabDeleter#readme"
+  "homepage": "https://github.com/AngeloKandah/DuplicateTabCloser#readme"
 }
