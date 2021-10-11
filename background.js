@@ -22,11 +22,11 @@ async function getOptions() {
 async function removeAllDuplicates() {
     const tabs = await chrome.tabs.query({});
     const tabsWithoutDups = [];
-    tabs.forEach(async ({ id, url, windowId, groupId }) => {
-        const hasDupes = await hasDuplicates(id, url, windowId, groupId);
-        tabsWithoutDups.includes(url) && hasDupes
-            ? closeChromeTab(id)
-            : tabsWithoutDups.push(url);
+    tabs.forEach(async (tab) => {
+        const hasDupes = await hasDuplicates(tab);
+        tabsWithoutDups.includes(tab.url) && hasDupes
+            ? closeChromeTab(tab.id)
+            : tabsWithoutDups.push(tab.url);
     });
 }
 
@@ -36,7 +36,13 @@ function constructUrl(url) {
     return hashlessURL.toString();
 }
 
-const hasDuplicates = async (tabId, tabUrl, tabWinId, tabGroupId) => {
+const hasDuplicates = async (tabInfo) => {
+    const {
+        id: tabId,
+        url: tabUrl,
+        windowId: tabWinId,
+        groupId: tabGroupId,
+    } = tabInfo;
     const { effectTabGroups, effectWindows } = await getOptions();
     const queriedTabs = await chrome.tabs.query({ url: constructUrl(tabUrl) });
     const excluded = await isExcluded(tabUrl);
@@ -95,18 +101,14 @@ async function getTabPosition(tabId) {
 async function onUpdate(
     tabId,
     { url: loading, status },
-    { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
+    { url, openerTabId, windowId, groupId }
 ) {
     if (loading || status === 'unloaded') return;
-    const duplicateCheck = await hasDuplicates(
-        tabId,
-        tabUrl,
-        tabWinId,
-        tabGroupId
-    );
+    const tabInfo = { id: tabId, url, windowId, groupId };
+    const duplicateCheck = await hasDuplicates(tabInfo);
     if (duplicateCheck) {
         closeChromeTab(tabId);
-        const alreadyOpenedTabId = await getTabId(tabUrl, tabWinId, tabGroupId);
+        const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
         changeChromeTabFocus(alreadyOpenedTabId);
         const { moveTabs } = await getOptions();
         if (openerTabId && moveTabs) {
@@ -116,7 +118,6 @@ async function onUpdate(
     }
 }
 
-
 /**
  * Read from local storage in async instead of using callbacks
  * Pass in a single string key or an array of keys to retrieve multiple values
@@ -124,7 +125,8 @@ async function onUpdate(
  * @param {string|array<string>} key
  * @returns {object}
  */
-const getLocalStorageKey = (key) => { //need to learn how to test
+const getLocalStorageKey = (key) => {
+    //need to learn how to test
     let storageKey = key;
     if (typeof storageKey !== 'array') storageKey = [storageKey];
 
