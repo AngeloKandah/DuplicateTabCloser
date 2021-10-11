@@ -117,6 +117,7 @@ async function onUpdate(
     }
 }
 
+
 /**
  * Read from local storage in async instead of using callbacks
  * Pass in a single string key or an array of keys to retrieve multiple values
@@ -125,7 +126,6 @@ async function onUpdate(
  * @returns {object}
  */
 const getLocalStorageKey = (key) => {
-    //need to learn how to test
     let storageKey = key;
     if (typeof storageKey !== 'array') storageKey = [storageKey];
 
