@@ -1,3 +1,4 @@
+/* import { chrome } from 'jest-chrome' */ //Must be commented out for tests to run
 function initExtension() {
     removeAllDuplicates();
 }
@@ -20,11 +21,11 @@ async function getOptions() {
 async function removeAllDuplicates() {
     const tabs = await chrome.tabs.query({});
     const tabsWithoutDups = [];
-    tabs.forEach(async ({ id, url, windowId, groupId }) => {
-        const hasDupes = await hasDuplicates(id, url, windowId, groupId);
-        tabsWithoutDups.includes(url) && hasDupes
-            ? closeChromeTab(id)
-            : tabsWithoutDups.push(url);
+    tabs.forEach(async (tab) => {
+        const hasDupes = await hasDuplicates(tab);
+        tabsWithoutDups.includes(tab.url) && hasDupes
+            ? closeChromeTab(tab.id)
+            : tabsWithoutDups.push(tab.url);
     });
 }
 
@@ -34,7 +35,13 @@ function constructUrl(url) {
     return hashlessURL.toString();
 }
 
-const hasDuplicates = async (tabId, tabUrl, tabWinId, tabGroupId) => {
+const hasDuplicates = async (tabInfo) => {
+    const {
+        id: tabId,
+        url: tabUrl,
+        windowId: tabWinId,
+        groupId: tabGroupId,
+    } = tabInfo;
     const { effectTabGroups, effectWindows } = await getOptions();
     const queriedTabs = await chrome.tabs.query({ url: constructUrl(tabUrl) });
     const excluded = await isExcluded(tabUrl);
@@ -61,7 +68,7 @@ async function isExcluded(tabUrl) {
 async function getTabId(tabUrl, tabWinId, tabGroupId) {
     const queryParams = { url: constructUrl(tabUrl) };
     const { effectWindows } = await getOptions();
-    if (effectWindows) {
+    if (!effectWindows) {
         queryParams['windowId'] = tabWinId;
         queryParams['groupId'] = tabGroupId;
     }
@@ -77,6 +84,7 @@ function changeChromeTabFocus(tabId) {
     chrome.tabs.update(tabId, { active: true });
 }
 
+//Add (effectWindows, move tab to current window, and maintain position)
 async function moveChromeTab(tabPosition, tabId) {
     const { index: position } = await chrome.tabs.get(tabId);
     tabPosition + 1 > position
@@ -92,18 +100,14 @@ async function getTabPosition(tabId) {
 async function onUpdate(
     tabId,
     { url: loading, status },
-    { url: tabUrl, openerTabId, windowId: tabWinId, groupId: tabGroupId }
+    { url, openerTabId, windowId, groupId }
 ) {
     if (loading || status === 'unloaded') return;
-    const duplicateCheck = await hasDuplicates(
-        tabId,
-        tabUrl,
-        tabWinId,
-        tabGroupId
-    );
+    const tabInfo = { id: tabId, url, windowId, groupId };
+    const duplicateCheck = await hasDuplicates(tabInfo);
     if (duplicateCheck) {
         closeChromeTab(tabId);
-        const alreadyOpenedTabId = await getTabId(tabUrl, tabWinId, tabGroupId);
+        const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
         changeChromeTabFocus(alreadyOpenedTabId);
         const { moveTabs } = await getOptions();
         if (openerTabId && moveTabs) {
@@ -121,7 +125,7 @@ async function onUpdate(
  * @param {string|array<string>} key
  * @returns {object}
  */
-const getLocalStorageKey = (key) => { //need to learn how to test
+const getLocalStorageKey = (key) => {
     let storageKey = key;
     if (typeof storageKey !== 'array') storageKey = [storageKey];
 
@@ -148,3 +152,12 @@ chrome.runtime.onInstalled.addListener(initExtension);
 chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onUpdated.addListener(onUpdate);
+
+/* module.exports = {
+    constructUrl,
+    hasDuplicates,
+    getOptions,
+    isExcluded,
+    getLocalStorageKey,
+    getTabPosition,
+}; */ //Must be commented out to import for extension use
