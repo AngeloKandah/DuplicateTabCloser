@@ -1,3 +1,4 @@
+const { it, expect } = require('@jest/globals');
 const {
     constructUrl,
     hasDuplicates,
@@ -43,7 +44,24 @@ describe('hasDuplicates', () => {
         }));
     const mockDuplicateTabsQuery = (mockTabs = defaultMockTabs) =>
         chrome.tabs.query.mockReturnValue(mockTabs);
-
+    describe('test helper func', () => {
+        it('should return a defaulMockTab with id of 1', async () => {
+            const tabs = makeTabList(defaultMockTab);
+            const [firstTab] = tabs;
+            expect(firstTab).toStrictEqual({id:1, ...defaultMockTab})
+        })
+        it('should return and id of 1', async () => {
+            const tabs = makeTabList(defaultMockTab);
+            const [{ id }] = tabs;
+            expect(id).toBe(1);
+        });
+        it('should return and id of 1 and 2', async () => {
+            const tabs = makeTabList(defaultMockTab, defaultMockTab);
+            const [{ id: first }, { id: second }] = tabs;
+            expect(first).toBe(1);
+            expect(second).toBe(2);
+        });
+    });
     describe('base cases', () => {
         beforeEach(() => {
             const optionData = {
@@ -195,13 +213,13 @@ describe('hasDuplicates', () => {
             expect(duplicateCheck).toBe(true);
         });
         it('should return false given two identical urls but different groupId', async () => {
-            const tabs = makeTabList(defaultMockTab, {groupId: 2});
+            const tabs = makeTabList(defaultMockTab, { groupId: 2 });
             mockDuplicateTabsQuery(tabs);
             const [firstTab] = tabs;
             const duplicateCheck = await hasDuplicates(firstTab);
             expect(duplicateCheck).toBe(false);
         });
-    })
+    });
 });
 
 describe('getOptions', () => {

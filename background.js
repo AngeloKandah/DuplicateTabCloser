@@ -1,5 +1,4 @@
-/* import { chrome } from 'jest-chrome'
- */
+/* import { chrome } from 'jest-chrome' */ //Must be commented out for tests to run
 function initExtension() {
     removeAllDuplicates();
 }
@@ -154,11 +153,11 @@ chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onUpdated.addListener(onUpdate);
 
-module.exports = {
+/* module.exports = {
     constructUrl,
     hasDuplicates,
     getOptions,
     isExcluded,
     getLocalStorageKey,
     getTabPosition,
-};
+}; */ //Must be commented out to import for extension use
