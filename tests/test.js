@@ -5,7 +5,7 @@ const {
     getOptions,
     getTabPosition,
     getLocalStorageKey,
-} = require('./background');
+} = require('../src/background');
 
 describe('constructUrl', () => {
     it('should return a URL without a hash', () => {
