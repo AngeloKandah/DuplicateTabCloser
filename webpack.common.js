@@ -20,11 +20,13 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/options.html',
             filename: 'options.html',
+            chunks: ['options']
         }),
         new CopyWebpackPlugin({
             patterns: [{ from: './src/manifest.json' }],
         }),
     ],
+    devtool: 'source-map',
     output: {
         filename: '[name].js',
         path: path.resolve(__dirname, 'dist'),
