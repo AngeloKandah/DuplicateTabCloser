@@ -1,5 +1,3 @@
-const { chrome } = require('../node_modules/jest-chrome')
-
 function initExtension() {
     removeAllDuplicates();
 }
@@ -78,7 +76,6 @@ async function getTabId(tabUrl, tabWinId, tabGroupId) {
 }
 
 function closeChromeTab(tabId) {
-    console.log('Closing tab ', tabId);
     chrome.tabs.remove(tabId);
 }
 
@@ -105,11 +102,9 @@ async function onUpdate(
     { url, openerTabId, windowId, groupId }
 ) {
     if (loading || status === 'unloaded') return;
-    console.log(tabId);
     const tabInfo = { id: tabId, url, windowId, groupId };
     const duplicateCheck = await hasDuplicates(tabInfo);
     if (duplicateCheck) {
-        console.log('Closing Tab ', url);
         closeChromeTab(tabId);
         const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
         changeChromeTabFocus(alreadyOpenedTabId);

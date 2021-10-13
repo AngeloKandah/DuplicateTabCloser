@@ -1,4 +1,4 @@
-
+import "./styles.css"
 /**
  * Read from local storage in async instead of using callbacks
  * Pass in a single string key or an array of keys to retrieve multiple values
@@ -79,7 +79,7 @@ function createDeleteButton() {
         const itemToRemove = deleteButton.parentElement;
         itemToRemove.remove();
         const { firstChild: { data: removedExclusion } } = itemToRemove;
-        const { options: { exclusions } } = getLocalStorageKey('options');
+        const { options: { exclusions } } = await getLocalStorageKey('options');
         const newExclusions = exclusions.filter(item => item !== removedExclusion);
         await updateOptions({ exclusions: newExclusions });
     });
