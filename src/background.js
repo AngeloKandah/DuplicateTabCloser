@@ -1,4 +1,3 @@
-/* import { chrome } from 'jest-chrome' */ //Must be commented out for tests to run
 function initExtension() {
     removeAllDuplicates();
 }
@@ -117,7 +116,6 @@ async function onUpdate(
     }
 }
 
-
 /**
  * Read from local storage in async instead of using callbacks
  * Pass in a single string key or an array of keys to retrieve multiple values
@@ -153,11 +151,11 @@ chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onUpdated.addListener(onUpdate);
 
-/* module.exports = {
+module.exports = {
     constructUrl,
     hasDuplicates,
     getOptions,
     isExcluded,
     getLocalStorageKey,
     getTabPosition,
-}; */ //Must be commented out to import for extension use
+}; //Must be commented out to import for extension use
