@@ -10,5 +10,8 @@
   "permissions": [
     "tabs",
     "storage"
-  ]
+  ],
+  "action": {
+    "default_popup": "options.html"
+  }
 }

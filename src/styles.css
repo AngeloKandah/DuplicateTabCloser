@@ -4,9 +4,14 @@
     margin: auto;
     font-size: medium;
 }
+
 .DeleteBtn {
     float: right;
     border-radius: 4px;
     border-color: lightgray;
     text-align: center;
+}
+
+.OptionBox {
+
 }

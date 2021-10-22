@@ -4,8 +4,10 @@ const {
     hasDuplicates,
     getOptions,
     getTabPosition,
-    getLocalStorageKey,
 } = require('../src/background');
+const {
+    getLocalStorageKey,
+} = require('../src/chrome_storage')
 
 describe('constructUrl', () => {
     it('should return a URL without a hash', () => {
