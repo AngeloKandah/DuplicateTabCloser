@@ -5,7 +5,7 @@
  * @param {string|array<string>} key
  * @returns {object}
  */
- const getLocalStorageKey = (key) => {
+export const getLocalStorageKey = (key) => {
     let storageKey = key;
     if (typeof storageKey !== 'array') storageKey = [storageKey];
 
@@ -23,9 +23,4 @@
  * Local Stoarge objects key is based on the Object key passed in
  * @param {Object} val
  */
-const setLocalStorageValue = (val) => chrome.storage.local.set(val);
-
-module.exports = {
-    getLocalStorageKey,
-    setLocalStorageValue,
-}
+export const setLocalStorageValue = (val) => chrome.storage.local.set(val);

@@ -1,13 +1,10 @@
-const {
-    getLocalStorageKey,
-    setLocalStorageValue,
-} = require('./chrome_storage.js');
+import { getLocalStorageKey, setLocalStorageValue } from './chrome_storage.js';
 
 function initExtension() {
     removeAllDuplicates();
 }
 
-async function getOptions() {
+export async function getOptions() {
     const { options } = await getLocalStorageKey('options');
     if (!options) {
         const defaultOptions = {
@@ -33,13 +30,13 @@ async function removeAllDuplicates() {
     });
 }
 
-function constructUrl(url) {
+export function constructUrl(url) {
     const hashlessURL = new URL(url);
     hashlessURL.hash = '';
     return hashlessURL.toString();
 }
 
-const hasDuplicates = async (tabInfo) => {
+export const hasDuplicates = async (tabInfo) => {
     const {
         id: tabId,
         url: tabUrl,
@@ -96,7 +93,7 @@ async function moveChromeTab(tabPosition, tabId) {
         : chrome.tabs.move(tabId, { index: tabPosition + 1 });
 }
 
-async function getTabPosition(tabId) {
+export async function getTabPosition(tabId) {
     const { index: tabPosition } = await chrome.tabs.get(tabId);
     return tabPosition;
 }
@@ -128,11 +125,3 @@ chrome.runtime.onInstalled.addListener(initExtension);
 chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onUpdated.addListener(onUpdate);
-
-module.exports = {
-    constructUrl,
-    hasDuplicates,
-    getOptions,
-    isExcluded,
-    getTabPosition,
-};

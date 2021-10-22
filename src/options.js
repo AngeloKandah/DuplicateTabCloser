@@ -1,8 +1,5 @@
 import './styles.css';
-const {
-    getLocalStorageKey,
-    setLocalStorageValue,
-} = require('./chrome_storage.js');
+import { getLocalStorageKey, setLocalStorageValue } from './chrome_storage.js';
 
 /**
  * Upsert into options local storage namespace
@@ -26,9 +23,9 @@ getLocalStorageKey('options').then(({ options }) => {
     createHTMLList(exclusions);
 });
 
-document.querySelectorAll('.optionList').forEach(item => {
-    item.addEventListener('click', submitChanges)
-})
+document.querySelectorAll('.optionList').forEach((item) => {
+    item.addEventListener('click', submitChanges);
+});
 
 const exclusionBox = document.getElementById('exclusionArray');
 const exclusionList = document.getElementById('exclusions');

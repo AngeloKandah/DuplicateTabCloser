@@ -1,8 +1,11 @@
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 
-module.exports = {
+export default {
     mode: 'production',
     entry: {
         background: './src/background.js',
@@ -20,7 +23,7 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/options.html',
             filename: 'options.html',
-            chunks: ['options']
+            chunks: ['options'],
         }),
         new CopyWebpackPlugin({
             patterns: [{ from: './src/manifest.json' }],
