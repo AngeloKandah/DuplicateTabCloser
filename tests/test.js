@@ -4,8 +4,8 @@ import {
     hasDuplicates,
     getOptions,
     getTabPosition,
-} from '../src/background';
-import { getLocalStorageKey } from '../src/chrome_storage';
+} from '../src/background.js';
+import { getLocalStorageKey } from '../src/chrome_storage.js';
 
 describe('constructUrl', () => {
     it('should return a URL without a hash', () => {

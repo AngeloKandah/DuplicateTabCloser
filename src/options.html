@@ -6,31 +6,36 @@
 </head>
 
 <body>
-    <h1 style="text-align:center">Settings</h1>
-    <div class="options">
-        <div class="li">
+    <div class="header">
+        <button id="previousPage"><i class="arrow left"></i></button>
+        <h1 id="headerTitle"></h1>
+        <button id="nextPage"><i class="arrow right"></i></button>
+    </div>
+    <div class="optionPage" id="settingsPage">
+        <div class="option">
             <label class="optionList">
-                <input type="checkbox" class="OptionBox" id="moveTabs" checked>
+                <input type="checkbox" id="moveTabs" checked>
                 <span>Move Tabs</span>
             </label>
         </div>
-        <div class="li">
+        <div class="option">
             <label class="optionList">
-                <input type="checkbox" class="OptionBox" id="effectWindows">
+                <input type="checkbox" id="effectWindows">
                 <span>Detect duplicates between windows</span>
             </label>
         </div>
-        <div class="li">
+        <div class="option">
             <label class="optionList">
-                <input type="checkbox" class="OptionBox" id="effectTabGroups">
+                <input type="checkbox" id="effectTabGroups">
                 <span>Detect duplicates between tab groups</span>
             </label>
         </div>
-        <div class="li">
-            <label>
-                <span>&nbspAdd to Exclusion List</span>
+    </div>
+    <div class="optionPage" id="exclusionPage">
+        <div class="option">
+            <label class="exclusionTextBox">
                 <input type="text" id="exclusionArray" placeholder="Enter new Exclusion">
-                <ul id="exclusions"></ul>
+                <ul class="exclusionList" id="exclusions"></ul>
             </label>
         </div>
     </div>

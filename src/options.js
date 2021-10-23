@@ -27,8 +27,18 @@ document.querySelectorAll('.optionList').forEach((item) => {
     item.addEventListener('click', submitChanges);
 });
 
+document.getElementById('nextPage').addEventListener('click', changePage);
+document.getElementById('previousPage').addEventListener('click', changePage);
+
 const exclusionBox = document.getElementById('exclusionArray');
 const exclusionList = document.getElementById('exclusions');
+
+const title = document.getElementById('headerTitle');
+const settingsPage = document.getElementById('settingsPage');
+const exclusionPage = document.getElementById('exclusionPage');
+
+title.textContent = 'Settings';
+settingsPage.className = 'optionPage active';
 
 function createHTMLList(exclusions) {
     exclusions.forEach(addToHTMLList);
@@ -46,7 +56,7 @@ function addToHTMLList(item) {
 function createDeleteButton() {
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Delete';
-    deleteButton.className = 'DeleteBtn';
+    deleteButton.className = 'deleteBtn';
     deleteButton.addEventListener('click', async () => {
         const itemToRemove = deleteButton.parentElement;
         itemToRemove.remove();
@@ -93,3 +103,15 @@ exclusionBox.addEventListener('keyup', async ({ code }) => {
     await updateOptions({ exclusions: newExclusions });
     addToHTMLList(newExclusion);
 });
+
+function changePage() {
+    if (settingsPage.className === 'optionPage active') {
+        settingsPage.className = 'optionPage';
+        exclusionPage.className = 'optionPage active';
+        title.textContent = 'Exclusions';
+    } else {
+        settingsPage.className = 'optionPage active';
+        exclusionPage.className = 'optionPage';
+        title.textContent = 'Settings';
+    }
+}
