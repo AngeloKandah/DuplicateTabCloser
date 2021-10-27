@@ -2,41 +2,52 @@
 <html>
 
 <head>
-    <title>Settings</title>
+    <title>Settings for Duplicate Tab Closer</title>
 </head>
 
 <body>
-    <div class="header">
-        <button id="previousPage"><i class="arrow left"></i></button>
-        <h1 id="headerTitle"></h1>
-        <button id="nextPage"><i class="arrow right"></i></button>
-    </div>
-    <div class="optionPage" id="settingsPage">
-        <div class="option">
-            <label class="optionList">
-                <input type="checkbox" id="moveTabs" checked>
-                <span>Move Tabs</span>
-            </label>
+    <button class="prev" id="previousPage"><i class="arrow left"></i></button>
+    <button class="next" id="nextPage"><i class="arrow right"></i></button>
+    <div class="pageContainer" id="pageContainer">
+        <div class="optionPage active" id="settingsPage">
+            <h1>Settings</h1>
+            <div class="option">
+                <label class="optionList">
+                    <input type="checkbox" id="moveTabs" checked>
+                    <span>Move Tabs</span>
+                </label>
+            </div>
+            <div class="option">
+                <label class="optionList">
+                    <input type="checkbox" id="effectWindows">
+                    <span>Detect duplicates between windows</span>
+                </label>
+            </div>
+            <div class="option">
+                <label class="optionList">
+                    <input type="checkbox" id="effectTabGroups">
+                    <span>Detect duplicates between tab groups</span>
+                </label>
+            </div>
         </div>
-        <div class="option">
-            <label class="optionList">
-                <input type="checkbox" id="effectWindows">
-                <span>Detect duplicates between windows</span>
-            </label>
+        <div class="optionPage" id="exclusionPage">
+            <h1>Exclusions</h1>
+            <div class="option">
+                <label class="exclusionTextBox">
+                    <input type="text" id="exclusionArray" placeholder="Enter new Exclusion">
+                    <ul class="exclusionList" id="exclusions"></ul>
+                </label>
+            </div>
         </div>
-        <div class="option">
-            <label class="optionList">
-                <input type="checkbox" id="effectTabGroups">
-                <span>Detect duplicates between tab groups</span>
-            </label>
-        </div>
-    </div>
-    <div class="optionPage" id="exclusionPage">
-        <div class="option">
-            <label class="exclusionTextBox">
-                <input type="text" id="exclusionArray" placeholder="Enter new Exclusion">
-                <ul class="exclusionList" id="exclusions"></ul>
-            </label>
+        <div class="optionPage" id="logPage">
+            <h1>Log</h1>
+            <div class="option">
+                <label class="logTextBox">
+                    <span>Number of urls to log: </span>
+                    <input type="number" id="numberOfUrls">
+                    <ul class="urlList" id="loggedUrls"></ul>
+                </label>
+            </div>
         </div>
     </div>
 </body>

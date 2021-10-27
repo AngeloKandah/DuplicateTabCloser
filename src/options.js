@@ -1,50 +1,35 @@
 import './styles.css';
-import { getLocalStorageKey, setLocalStorageValue } from './chrome_storage.js';
-
-/**
- * Upsert into options local storage namespace
- * Local Stoarge objects key is based on the Object key passed in
- * @param {Object} val
- */
-const updateOptions = async (updatedValues) => {
-    const { options } = await getLocalStorageKey('options');
-    const updatedOptions = {
-        ...options,
-        ...updatedValues,
-    };
-    setLocalStorageValue({ options: updatedOptions });
-};
+import { getLocalStorageKey, updateOptions } from './chrome_storage.js';
 
 getLocalStorageKey('options').then(({ options }) => {
-    const { moveTabs, effectWindows, effectTabGroups, exclusions } = options;
+    const {
+        moveTabs,
+        effectWindows,
+        effectTabGroups,
+        exclusions,
+        numberOfUrls,
+        loggedUrls,
+    } = options;
     document.getElementById('moveTabs').checked = moveTabs;
     document.getElementById('effectWindows').checked = effectWindows;
     document.getElementById('effectTabGroups').checked = effectTabGroups;
-    createHTMLList(exclusions);
+    document.getElementById('numberOfUrls').value = numberOfUrls;
+    createExclusionList(exclusions);
+    createLogList(loggedUrls);
 });
 
 document.querySelectorAll('.optionList').forEach((item) => {
     item.addEventListener('click', submitChanges);
 });
 
-document.getElementById('nextPage').addEventListener('click', changePage);
-document.getElementById('previousPage').addEventListener('click', changePage);
-
 const exclusionBox = document.getElementById('exclusionArray');
 const exclusionList = document.getElementById('exclusions');
 
-const title = document.getElementById('headerTitle');
-const settingsPage = document.getElementById('settingsPage');
-const exclusionPage = document.getElementById('exclusionPage');
-
-title.textContent = 'Settings';
-settingsPage.className = 'optionPage active';
-
-function createHTMLList(exclusions) {
-    exclusions.forEach(addToHTMLList);
+function createExclusionList(exclusions) {
+    exclusions.forEach(addToExclusionList);
 }
 
-function addToHTMLList(item) {
+function addToExclusionList(item) {
     const listItem = document.createElement('li');
     listItem.textContent = `${item}`;
     exclusionList.appendChild(listItem);
@@ -104,14 +89,43 @@ exclusionBox.addEventListener('keyup', async ({ code }) => {
     addToHTMLList(newExclusion);
 });
 
-function changePage() {
-    if (settingsPage.className === 'optionPage active') {
-        settingsPage.className = 'optionPage';
-        exclusionPage.className = 'optionPage active';
-        title.textContent = 'Exclusions';
-    } else {
-        settingsPage.className = 'optionPage active';
-        exclusionPage.className = 'optionPage';
-        title.textContent = 'Settings';
+const pages = [...document.getElementById('pageContainer').children];
+
+function setPage(goingForward) {
+    const currentPageIndex = pages.findIndex((page) =>
+        page.classList.contains('active')
+    );
+    const len = pages.length;
+    const nextPageIndex = goingForward
+        ? (currentPageIndex + 1) % len
+        : (currentPageIndex + len - 1) % len;
+    pages[currentPageIndex].classList.remove('active');
+    pages[nextPageIndex].classList.add('active');
+}
+
+const nextPage = () => setPage(true);
+const prevPage = () => setPage(false);
+
+document.getElementById('nextPage').addEventListener('click', nextPage);
+document.getElementById('previousPage').addEventListener('click', prevPage);
+
+const numberOfUrlsToLog = document.getElementById('numberOfUrls');
+const loggedList = document.getElementById('loggedUrls');
+
+numberOfUrls.addEventListener('keyup', async ({ code }) => {
+    const { value: newNumber } = numberOfUrlsToLog;
+    if (code !== 'Enter' || /\s/.test(newNumber)) {
+        return;
     }
+    await updateOptions({ numberOfUrls: newNumber });
+});
+
+function createLogList(urls) {
+    urls.forEach(addToLogList);
+}
+
+function addToLogList(item){
+    const listItem = document.createElement('li');
+    listItem.textContent = `${item}`;
+    loggedList.appendChild(listItem);
 }
