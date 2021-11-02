@@ -7,13 +7,13 @@ getLocalStorageKey('options').then(({ options }) => {
         effectWindows,
         effectTabGroups,
         exclusions,
-        numberOfUrls,
+        logMaxUrls,
         loggedUrls,
     } = options;
     document.getElementById('moveTabs').checked = moveTabs;
     document.getElementById('effectWindows').checked = effectWindows;
     document.getElementById('effectTabGroups').checked = effectTabGroups;
-    document.getElementById('numberOfUrls').value = numberOfUrls;
+    document.getElementById('logMaxUrls').value = logMaxUrls;
     createExclusionList(exclusions);
     createLogList(loggedUrls);
 });
@@ -86,7 +86,7 @@ exclusionBox.addEventListener('keyup', async ({ code }) => {
 
     const newExclusions = [...exclusions, newExclusion];
     await updateOptions({ exclusions: newExclusions });
-    addToHTMLList(newExclusion);
+    addToExclusionList(newExclusion);
 });
 
 const pages = [...document.getElementById('pageContainer').children];
@@ -109,23 +109,27 @@ const prevPage = () => setPage(false);
 document.getElementById('nextPage').addEventListener('click', nextPage);
 document.getElementById('previousPage').addEventListener('click', prevPage);
 
-const numberOfUrlsToLog = document.getElementById('numberOfUrls');
+const numberOfUrlsToLog = document.getElementById('logMaxUrls');
 const loggedList = document.getElementById('loggedUrls');
 
-numberOfUrls.addEventListener('keyup', async ({ code }) => {
+logMaxUrls.addEventListener('keyup', async ({ code }) => {
     const { value: newNumber } = numberOfUrlsToLog;
     if (code !== 'Enter' || /\s/.test(newNumber)) {
         return;
     }
-    await updateOptions({ numberOfUrls: newNumber });
+    await updateOptions({ logMaxUrls: newNumber });
 });
 
 function createLogList(urls) {
     urls.forEach(addToLogList);
 }
 
-function addToLogList(item){
+function addToLogList(item) {
     const listItem = document.createElement('li');
-    listItem.textContent = `${item}`;
+    const anchor = document.createElement('a');
+    anchor.href = `${item}`;
+    anchor.target = `_blank`;
+    anchor.innerText = `${item}`;
+    listItem.appendChild(anchor);
     loggedList.appendChild(listItem);
 }

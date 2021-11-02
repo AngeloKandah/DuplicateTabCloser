@@ -16,7 +16,7 @@ export async function getOptions() {
             effectWindows: false,
             effectTabGroups: false,
             exclusions: [],
-            numberOfUrls: 5,
+            logMaxUrls: 5,
             loggedUrls: [],
         };
         setLocalStorageValue({ options: defaultOptions });
@@ -105,13 +105,15 @@ export async function getTabPosition(tabId) {
 }
 
 async function addToUrlLog(url) {
-    const { numberOfUrls, loggedUrls } = await getOptions();
-    const len = loggedUrls.length
-    loggedUrls.unshift(url);
-    if(len >= numberOfUrls){
-        loggedUrls.splice(numberOfUrls, len)
-    } 
-    updateOptions({ loggedUrls });
+    const { logMaxUrls, loggedUrls } = await getOptions();
+    const updatedLoggedUrls = [url, ...loggedUrls];
+    if (updatedLoggedUrls.length - 1 >= logMaxUrls) {
+        updatedLoggedUrls.splice(logMaxUrls, updatedLoggedUrls.length);
+        const finalLoggedUrls = [...updatedLoggedUrls];
+        updateOptions({ loggedUrls: finalLoggedUrls });
+        return;
+    }
+    updateOptions({ loggedUrls: updatedLoggedUrls });
 }
 
 async function onUpdate(

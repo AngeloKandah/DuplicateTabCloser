@@ -14,7 +14,7 @@ button {
     position: absolute;
     top: 5px;
     left: 5px;
-    height: 50px
+    height: 50px;
 }
 
 .next {
@@ -29,9 +29,8 @@ body {
 }
 
 .option {
-    align-items: center;
+    align-content: center;
     display: flex;
-    margin: auto;
     margin-top: 3px;
     font-size: medium;
 }
@@ -69,26 +68,27 @@ body {
     display: block;
 }
 
-.exclusionTextBox {
-    display: block;
-    margin-right: auto;
+.inputBox {
     margin-left: auto;
+    margin-right: auto;
 }
 
-.exclusionList {
-    padding-left: 10px;
+.itemList li {
+    width: 150px;
+    word-wrap: break-word;
+    margin-left: -20px;
 }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-input[type=number]{
-    width: 30px;
+input[type='number'] {
+    width: 20px;
 }
 
-.urlList{
-    overflow-wrap: break-word;
+input[type='text'] {
+    width: 180px;
 }
