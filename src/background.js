@@ -91,7 +91,6 @@ function changeChromeTabFocus(tabId) {
     chrome.tabs.update(tabId, { active: true });
 }
 
-//Add (effectWindows, move tab to current window, and maintain position)
 async function moveChromeTab(tabPosition, tabId) {
     const { index: position } = await chrome.tabs.get(tabId);
     tabPosition + 1 > position
@@ -105,15 +104,9 @@ export async function getTabPosition(tabId) {
 }
 
 async function addToUrlLog(url) {
-    const { logMaxUrls, loggedUrls } = await getOptions();
-    const updatedLoggedUrls = [url, ...loggedUrls];
-    if (updatedLoggedUrls.length - 1 >= logMaxUrls) {
-        updatedLoggedUrls.splice(logMaxUrls, updatedLoggedUrls.length);
-        const finalLoggedUrls = [...updatedLoggedUrls];
-        updateOptions({ loggedUrls: finalLoggedUrls });
-        return;
-    }
-    updateOptions({ loggedUrls: updatedLoggedUrls });
+    const { logMaxUrls, loggedUrls: oldUrls } = await getOptions();
+    const loggedUrls = [url, ...oldUrls.slice(0, logMaxUrls - 1)];
+    updateOptions({ loggedUrls });
 }
 
 async function onUpdate(

@@ -40,7 +40,7 @@ function addToExclusionList(item) {
 
 function createDeleteButton() {
     const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Delete';
+    deleteButton.textContent = 'x';
     deleteButton.className = 'deleteBtn';
     deleteButton.addEventListener('click', async () => {
         const itemToRemove = deleteButton.parentElement;
@@ -117,7 +117,7 @@ logMaxUrls.addEventListener('keyup', async ({ code }) => {
     if (code !== 'Enter' || /\s/.test(newNumber)) {
         return;
     }
-    await updateOptions({ logMaxUrls: newNumber });
+    updateOptions({ logMaxUrls: newNumber });
 });
 
 function createLogList(urls) {
