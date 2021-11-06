@@ -1,11 +1,11 @@
-const { it, expect } = require('@jest/globals');
-const {
+import { it, expect } from '@jest/globals';
+import {
     constructUrl,
     hasDuplicates,
     getOptions,
     getTabPosition,
-    getLocalStorageKey,
-} = require('../src/background');
+} from '../src/background.js';
+import { getLocalStorageKey } from '../src/chrome_storage.js';
 
 describe('constructUrl', () => {
     it('should return a URL without a hash', () => {
@@ -48,8 +48,8 @@ describe('hasDuplicates', () => {
         it('should return a defaulMockTab with id of 1', async () => {
             const tabs = makeTabList(defaultMockTab);
             const [firstTab] = tabs;
-            expect(firstTab).toStrictEqual({id:1, ...defaultMockTab})
-        })
+            expect(firstTab).toStrictEqual({ id: 1, ...defaultMockTab });
+        });
         it('should return and id of 1', async () => {
             const tabs = makeTabList(defaultMockTab);
             const [{ id }] = tabs;

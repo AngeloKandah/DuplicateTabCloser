@@ -1,1 +1,2 @@
-Object.assign(global, require('jest-chrome'))
+import * as chrome from 'jest-chrome';
+Object.assign(global, chrome);

@@ -1,116 +1,135 @@
-import "./styles.css"
-/**
- * Read from local storage in async instead of using callbacks
- * Pass in a single string key or an array of keys to retrieve multiple values
- * 
- * @param {string|array<string>} key 
- * @returns {object}
- */
-const getLocalStorageKey = key => {
-    let storageKey = key;
-    if (typeof storageKey !== 'array') storageKey = [storageKey];
+import './styles.css';
+import { getLocalStorageKey, updateOptions } from './chrome_storage.js';
 
-    return new Promise((resolve, reject) => {
-        try {
-            chrome.storage.local.get(key, resolve)
-        } catch (err) {
-            reject(err);
-        }
-    });
+getLocalStorageKey('options').then(({ options }) => {
+    const {
+        moveTabs,
+        effectWindows,
+        effectTabGroups,
+        exclusions,
+        logMaxUrls,
+        loggedUrls,
+    } = options;
+    document.getElementById('moveTabs').checked = moveTabs;
+    document.getElementById('effectWindows').checked = effectWindows;
+    document.getElementById('effectTabGroups').checked = effectTabGroups;
+    document.getElementById('logMaxUrls').value = logMaxUrls;
+    createExclusionList(exclusions);
+    createLogList(loggedUrls);
+});
+
+document.querySelectorAll('.optionList').forEach((item) => {
+    item.addEventListener('click', submitChanges);
+});
+
+const exclusionBox = document.getElementById('exclusionArray');
+const exclusionList = document.getElementById('exclusions');
+
+function createExclusionList(exclusions) {
+    exclusions.forEach(addToExclusionList);
 }
 
-/**
- * Set an object in local storage to the given value
- * Local Stoarge objects key is based on the Object key passed in
- * @param {Object} val 
- */
-const setLocalStorageValue = val => chrome.storage.local.set(val);
-
-/**
- * Upsert into options local storage namespace
- * Local Stoarge objects key is based on the Object key passed in
- * @param {Object} val 
- */
-const updateOptions = async (updatedValues) => {
-    const { options } = await getLocalStorageKey('options');
-    const updatedOptions = {
-        ...options,
-        ...updatedValues,
-    }
-    setLocalStorageValue({ options: updatedOptions });
-}
-
-getLocalStorageKey('options')
-    .then(({ options }) => {
-        const { moveTabs, effectWindows, effectTabGroups, exclusions } = options;
-        document.getElementById("moveTabs").checked = moveTabs;
-        document.getElementById("effectWindows").checked = effectWindows;
-        document.getElementById("effectTabGroups").checked = effectTabGroups;
-        createHTMLList(exclusions);
-    });
-
-
-const submit = document.getElementById("submit");
-const exclusionBox = document.getElementById("exclusionArray");
-const exclusionList = document.getElementById("exclusions");
-
-function isOptionEnabled(id) {
-    return document.getElementById(id).checked;
-}
-
-function createHTMLList(exclusions) {
-    exclusions.forEach(addToHTMLList);
-}
-
-function addToHTMLList(item) {
-    const listItem = document.createElement("li");
+function addToExclusionList(item) {
+    const listItem = document.createElement('li');
     listItem.textContent = `${item}`;
     exclusionList.appendChild(listItem);
     const deleteButton = createDeleteButton();
     listItem.appendChild(deleteButton);
-    exclusionBox.value = "";
+    exclusionBox.value = '';
 }
 
 function createDeleteButton() {
-    const deleteButton = document.createElement("button");
-    deleteButton.textContent = "Delete";
-    deleteButton.className = "DeleteBtn";
-    deleteButton.addEventListener("click", async () => {
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'x';
+    deleteButton.className = 'deleteBtn';
+    deleteButton.addEventListener('click', async () => {
         const itemToRemove = deleteButton.parentElement;
         itemToRemove.remove();
-        const { firstChild: { data: removedExclusion } } = itemToRemove;
-        const { options: { exclusions } } = await getLocalStorageKey('options');
-        const newExclusions = exclusions.filter(item => item !== removedExclusion);
+        const {
+            firstChild: { data: removedExclusion },
+        } = itemToRemove;
+        const {
+            options: { exclusions },
+        } = await getLocalStorageKey('options');
+        const newExclusions = exclusions.filter(
+            (item) => item !== removedExclusion
+        );
         await updateOptions({ exclusions: newExclusions });
     });
     return deleteButton;
 }
 
+function isOptionEnabled(id) {
+    return document.getElementById(id).checked;
+}
+
 async function submitChanges() {
-    const settingFields = ["moveTabs", "effectWindows", "effectTabGroups"];
-    const [moveTabs, effectWindows, effectTabGroups] = settingFields.map(isOptionEnabled);
+    const settingFields = ['moveTabs', 'effectWindows', 'effectTabGroups'];
+    const [moveTabs, effectWindows, effectTabGroups] =
+        settingFields.map(isOptionEnabled);
     await updateOptions({ moveTabs, effectWindows, effectTabGroups });
 }
 
-submit.addEventListener("click", submitChanges);
-
-exclusionBox.addEventListener("keyup", async ({ code }) => {
+exclusionBox.addEventListener('keyup', async ({ code }) => {
     const { value: newExclusion } = exclusionBox;
-    if (
-        code !== 'Enter'
-        || !newExclusion
-        || /\s/.test(newExclusion)
-    ) {
+    if (code !== 'Enter' || !newExclusion || /\s/.test(newExclusion)) {
         return;
     }
 
-    const { options: { exclusions } } = await getLocalStorageKey('options');
+    const {
+        options: { exclusions },
+    } = await getLocalStorageKey('options');
     if (exclusions.includes(newExclusion)) {
-        exclusionBox.value = "";
+        exclusionBox.value = '';
         return;
     }
 
     const newExclusions = [...exclusions, newExclusion];
     await updateOptions({ exclusions: newExclusions });
-    addToHTMLList(newExclusion);
+    addToExclusionList(newExclusion);
 });
+
+const pages = [...document.getElementById('pageContainer').children];
+
+function setPage(goingForward) {
+    const currentPageIndex = pages.findIndex((page) =>
+        page.classList.contains('active')
+    );
+    const len = pages.length;
+    const nextPageIndex = goingForward
+        ? (currentPageIndex + 1) % len
+        : (currentPageIndex + len - 1) % len;
+    pages[currentPageIndex].classList.remove('active');
+    pages[nextPageIndex].classList.add('active');
+}
+
+const nextPage = () => setPage(true);
+const prevPage = () => setPage(false);
+
+document.getElementById('nextPage').addEventListener('click', nextPage);
+document.getElementById('previousPage').addEventListener('click', prevPage);
+
+const numberOfUrlsToLog = document.getElementById('logMaxUrls');
+const loggedList = document.getElementById('loggedUrls');
+
+logMaxUrls.addEventListener('keyup', async ({ code }) => {
+    const { value: newNumber } = numberOfUrlsToLog;
+    if (code !== 'Enter' || /\s/.test(newNumber)) {
+        return;
+    }
+    updateOptions({ logMaxUrls: newNumber });
+});
+
+function createLogList(urls) {
+    urls.forEach(addToLogList);
+}
+
+function addToLogList(item) {
+    const listItem = document.createElement('li');
+    const anchor = document.createElement('a');
+    anchor.href = `${item}`;
+    anchor.target = `_blank`;
+    anchor.innerText = `${item}`;
+    listItem.appendChild(anchor);
+    loggedList.appendChild(listItem);
+}

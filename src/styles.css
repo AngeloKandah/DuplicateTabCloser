@@ -1,12 +1,108 @@
-.li {
-    align-items: center;
+body {
+    border-style: solid;
+    border-color: black;
+    margin: 0px;
+    color: black;
+    background-color: rgba(8, 51, 8, 0.549);
+    width: 200px;
+}
+
+h1 {
+    text-align: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    margin-top: 12px;
+}
+
+.prev {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    height: 50px;
+    background-color: transparent;
+    border-color: rgba(10, 63, 10, 0.549)
+}
+
+.next {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    height: 50px;
+    background-color: transparent;
+    border-color: rgba(10, 63, 10, 0.549)
+}
+
+.option {
+    align-content: center;
     display: flex;
-    margin: auto;
+    margin-top: 3px;
     font-size: medium;
 }
-.DeleteBtn {
-    float: right;
+
+.deleteBtn {
+    position: absolute;
+    right: 10px;
     border-radius: 4px;
-    border-color: lightgray;
+    background-color: transparent;
+    border-color: transparent;
+    font-size: medium;
     text-align: center;
+}
+
+.deleteBtn:hover {
+    background-color: lightgray;
+}
+
+.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.right {
+    justify-self: right;
+    transform: rotate(-45deg);
+}
+
+.left {
+    justify-self: left;
+    transform: rotate(135deg);
+}
+
+.optionPage {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+.inputBox {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.itemList li {
+    width: 150px;
+    word-wrap: break-word;
+    margin-left: -20px;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type='number'] {
+    width: 15px;
+}
+
+input[type='text'] {
+    width: 170px;
+}
+
+.pageContainer {
+    margin: 8px;
 }

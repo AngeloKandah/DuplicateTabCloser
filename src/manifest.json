@@ -1,14 +1,16 @@
 {
   "name": "Duplicate Tab Closer",
-  "description": "Removes duplicate tabs",
+  "description": "Removes duplicate tabs.",
   "version": "1.0",
   "manifest_version": 3,
   "background": {
     "service_worker": "background.js"
   },
-  "options_page": "options.html",
   "permissions": [
     "tabs",
     "storage"
-  ]
+  ],
+  "action": {
+    "default_popup": "options.html"
+  }
 }

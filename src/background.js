@@ -1,8 +1,14 @@
+import {
+    getLocalStorageKey,
+    setLocalStorageValue,
+    updateOptions,
+} from './chrome_storage.js';
+
 function initExtension() {
     removeAllDuplicates();
 }
 
-async function getOptions() {
+export async function getOptions() {
     const { options } = await getLocalStorageKey('options');
     if (!options) {
         const defaultOptions = {
@@ -10,6 +16,8 @@ async function getOptions() {
             effectWindows: false,
             effectTabGroups: false,
             exclusions: [],
+            logMaxUrls: 5,
+            loggedUrls: [],
         };
         setLocalStorageValue({ options: defaultOptions });
         return defaultOptions;
@@ -28,13 +36,13 @@ async function removeAllDuplicates() {
     });
 }
 
-function constructUrl(url) {
+export function constructUrl(url) {
     const hashlessURL = new URL(url);
     hashlessURL.hash = '';
     return hashlessURL.toString();
 }
 
-const hasDuplicates = async (tabInfo) => {
+export const hasDuplicates = async (tabInfo) => {
     const {
         id: tabId,
         url: tabUrl,
@@ -83,7 +91,6 @@ function changeChromeTabFocus(tabId) {
     chrome.tabs.update(tabId, { active: true });
 }
 
-//Add (effectWindows, move tab to current window, and maintain position)
 async function moveChromeTab(tabPosition, tabId) {
     const { index: position } = await chrome.tabs.get(tabId);
     tabPosition + 1 > position
@@ -91,9 +98,15 @@ async function moveChromeTab(tabPosition, tabId) {
         : chrome.tabs.move(tabId, { index: tabPosition + 1 });
 }
 
-async function getTabPosition(tabId) {
+export async function getTabPosition(tabId) {
     const { index: tabPosition } = await chrome.tabs.get(tabId);
     return tabPosition;
+}
+
+async function addToUrlLog(url) {
+    const { logMaxUrls, loggedUrls: oldUrls } = await getOptions();
+    const loggedUrls = [url, ...oldUrls.slice(0, logMaxUrls - 1)];
+    updateOptions({ loggedUrls });
 }
 
 async function onUpdate(
@@ -106,6 +119,7 @@ async function onUpdate(
     const duplicateCheck = await hasDuplicates(tabInfo);
     if (duplicateCheck) {
         closeChromeTab(tabId);
+        addToUrlLog(url);
         const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
         changeChromeTabFocus(alreadyOpenedTabId);
         const { moveTabs } = await getOptions();
@@ -116,33 +130,6 @@ async function onUpdate(
     }
 }
 
-/**
- * Read from local storage in async instead of using callbacks
- * Pass in a single string key or an array of keys to retrieve multiple values
- *
- * @param {string|array<string>} key
- * @returns {object}
- */
-const getLocalStorageKey = (key) => {
-    let storageKey = key;
-    if (typeof storageKey !== 'array') storageKey = [storageKey];
-
-    return new Promise((resolve, reject) => {
-        try {
-            chrome.storage.local.get(storageKey, resolve);
-        } catch (err) {
-            reject(err);
-        }
-    });
-};
-
-/**
- * Set an object in local storage to the given value
- * Local Stoarge objects key is based on the Object key passed in
- * @param {Object} val
- */
-const setLocalStorageValue = (val) => chrome.storage.local.set(val);
-
 chrome.storage.onChanged.addListener(getOptions);
 
 chrome.runtime.onInstalled.addListener(initExtension);
@@ -150,12 +137,3 @@ chrome.runtime.onInstalled.addListener(initExtension);
 chrome.runtime.onStartup.addListener(initExtension);
 
 chrome.tabs.onUpdated.addListener(onUpdate);
-
-module.exports = {
-    constructUrl,
-    hasDuplicates,
-    getOptions,
-    isExcluded,
-    getLocalStorageKey,
-    getTabPosition,
-}; //Must be commented out to import for extension use
