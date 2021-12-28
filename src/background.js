@@ -4,23 +4,44 @@ import {
     updateOptions,
 } from './chrome_storage.js';
 
+let recentlyClosedTabs = [];
+
+const defaultOptions = {
+    moveTabs: true,
+    effectWindows: false,
+    effectTabGroups: false,
+    exclusions: [],
+    logMaxUrls: 5,
+    loggedUrls: [],
+    closeGracePeriod: 5, // in seconds
+};
+
 function initExtension() {
     removeAllDuplicates();
+}
+
+// https://stackoverflow.com/questions/14368596/how-can-i-check-that-two-objects-have-the-same-set-of-property-names
+// second answer ES6 variadic version
+function objectsHaveSameKeys(...objects) {
+    const allKeys = objects.reduce((keys, object) => keys.concat(Object.keys(object)), []);
+    const union = new Set(allKeys);
+    return objects.every(object => union.size === Object.keys(object).length);
 }
 
 export async function getOptions() {
     const { options } = await getLocalStorageKey('options');
     if (!options) {
-        const defaultOptions = {
-            moveTabs: true,
-            effectWindows: false,
-            effectTabGroups: false,
-            exclusions: [],
-            logMaxUrls: 5,
-            loggedUrls: [],
-        };
         setLocalStorageValue({ options: defaultOptions });
         return defaultOptions;
+    }
+    if (!objectsHaveSameKeys(options, defaultOptions)) {
+        //graceful addition of new options
+        const updatedOptions = {
+            ...defaultOptions,
+            ...options,
+        };
+        setLocalStorageValue({ options: updatedOptions });
+        return updatedOptions;
     }
     return options;
 }
@@ -42,6 +63,36 @@ export function constructUrl(url) {
     return hashlessURL.toString();
 }
 
+export const cleanupRecentlyClosedTabs = () => {
+    recentlyClosedTabs = recentlyClosedTabs.filter(({ expiresOn }) => Date.now() <= expiresOn);
+}
+
+// https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
+// "First or last?"
+function uniqByKeepLast(a, key) {
+    return [
+        ...new Map(
+            a.map(x => [key(x), x])
+        ).values()
+    ]
+}
+
+export const addRecentlyClosedTab = async fingerprint => {
+    const { closeGracePeriod } = await getOptions();
+    const expiresOn = Date.now() + closeGracePeriod * 1000; //defined in seconds
+    recentlyClosedTabs.push({
+        fingerprint,
+        expiresOn,
+    });
+    recentlyClosedTabs = uniqByKeepLast(recentlyClosedTabs, t => t.fingerprint)
+    cleanupRecentlyClosedTabs();
+}
+
+export const isRecentlyClosedTab = async fingerprint => {
+    cleanupRecentlyClosedTabs();
+    return recentlyClosedTabs.find(({ fingerprint: f1 }) => f1 === fingerprint);
+}
+
 export const hasDuplicates = async (tabInfo) => {
     const {
         id: tabId,
@@ -52,14 +103,16 @@ export const hasDuplicates = async (tabInfo) => {
     const { effectTabGroups, effectWindows } = await getOptions();
     const queriedTabs = await chrome.tabs.query({ url: constructUrl(tabUrl) });
     const excluded = await isExcluded(tabUrl);
+    const isRecentlyClosed = await isRecentlyClosedTab(await getTabFingerprint(tabId));
+    if (excluded || isRecentlyClosed) return false;
+
     return queriedTabs.reduce((acc, { url, id, windowId, groupId }) => {
         return (
             acc ||
             (url === tabUrl &&
                 id !== tabId &&
                 windowId === (effectWindows ? windowId : tabWinId) &&
-                groupId === (effectTabGroups ? groupId : tabGroupId) &&
-                !excluded)
+                groupId === (effectTabGroups ? groupId : tabGroupId))
         );
     }, false);
 };
@@ -83,7 +136,9 @@ async function getTabId(tabUrl, tabWinId, tabGroupId) {
     return tabId;
 }
 
-function closeChromeTab(tabId) {
+async function closeChromeTab(tabId) {
+    const fingerprint = await getTabFingerprint(tabId);
+    addRecentlyClosedTab(fingerprint);
     chrome.tabs.remove(tabId);
 }
 
@@ -114,20 +169,33 @@ async function onUpdate(
     { url: loading, status },
     { url, openerTabId, windowId, groupId }
 ) {
+    // console.log('onupdate start')
+    // console.log({ tabId });
+    // console.log({ changeInfo: { loading, status } });
+    // console.log({ tab: { url, openerTabId, windowId, groupId } });
+    // console.log('onupdate end')
+
     if (loading || status === 'unloaded') return;
+
     const tabInfo = { id: tabId, url, windowId, groupId };
     const duplicateCheck = await hasDuplicates(tabInfo);
-    if (duplicateCheck) {
-        closeChromeTab(tabId);
-        addToUrlLog(url);
-        const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
-        changeChromeTabFocus(alreadyOpenedTabId);
-        const { moveTabs } = await getOptions();
-        if (openerTabId && moveTabs) {
-            const tabPosition = await getTabPosition(openerTabId);
-            await moveChromeTab(tabPosition, alreadyOpenedTabId);
-        }
+
+    if (!duplicateCheck) return;
+
+    closeChromeTab(tabId);
+    addToUrlLog(url);
+    const alreadyOpenedTabId = await getTabId(url, windowId, groupId);
+    changeChromeTabFocus(alreadyOpenedTabId);
+    const { moveTabs } = await getOptions();
+    if (openerTabId && moveTabs) {
+        const tabPosition = await getTabPosition(openerTabId);
+        await moveChromeTab(tabPosition, alreadyOpenedTabId);
     }
+}
+
+async function getTabFingerprint(tabID) {
+    const { url } = await chrome.tabs.get(tabID);
+    return url;
 }
 
 chrome.storage.onChanged.addListener(getOptions);
