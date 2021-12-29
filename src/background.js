@@ -167,11 +167,6 @@ async function onUpdate(
     { url: loading, status },
     { url, openerTabId, windowId, groupId }
 ) {
-    // console.log('onupdate start')
-    // console.log({ tabId });
-    // console.log({ changeInfo: { loading, status } });
-    // console.log({ tab: { url, openerTabId, windowId, groupId } });
-    // console.log('onupdate end')
 
     if (loading || status === 'unloaded') return;
 
