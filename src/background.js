@@ -21,7 +21,6 @@ function initExtension() {
 }
 
 // https://stackoverflow.com/questions/14368596/how-can-i-check-that-two-objects-have-the-same-set-of-property-names
-// second answer ES6 variadic version
 function objectsHaveSameKeys(...objects) {
     const allKeys = objects.reduce((keys, object) => keys.concat(Object.keys(object)), []);
     const union = new Set(allKeys);
