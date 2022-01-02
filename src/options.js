@@ -1,5 +1,5 @@
 import './styles.css';
-import { getLocalStorageKey, updateOptions } from './chrome_storage.js';
+import { updateOptions } from './chrome_storage.js';
 import { getOptions } from './background.js';
 
 //any jquery-ers in the chat?
