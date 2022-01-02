@@ -14,7 +14,7 @@ To change your node version, check out [nvm](https://github.com/nvm-sh/nvm).
 2. Make sure you are in that folder in your cli.
 2. Install Dependencies `npm install`.
 3. Build the project `npm run build`.
-4. After this is installed, you will produce a /dist folder.
+4. After this is installed, you will produce a `/dist` folder.
 5. Then go to chrome://extensions/ and click `load unpacked` and point it to that dist folder.
 
 ---
