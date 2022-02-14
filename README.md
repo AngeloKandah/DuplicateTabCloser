@@ -5,6 +5,24 @@ It has many configurable options in which you can decide whether to close tabs b
 
 ---
 
+## Installation
+
+
+1. Clone this repo `git clone https://github.com/AngeloKandah/DuplicateTabCloser.git` into a folder of your choice.
+2. Make sure you are in that folder in your `cli`.
+2. Install Dependencies `npm install`.
+3. Build the project `npm run build`.
+4. After this is installed, you will produce a `/dist` folder.
+5. Then go to `chrome://extensions/` and click `load unpacked` and point it to that dist folder.
+
+---
+
+## Testing
+
+For testing I use [Jest](https://jestjs.io/). To run the tests use `npm run test` in your CLI and it will run the tets found in `tests/test.js`. Since this is a chrome extension, the jest environment also required [jest-chrome](https://www.npmjs.com/package/jest-chrome), which allows mocking functionality of all chrome API calls.
+
+---
+
 ## Options
 There are three options: moveTabs, effectTabGroups, effectWindows.
 There is also exclusions, which the user creates a list of so the extension knows to ignore urls that return true for the exclusion.
@@ -24,15 +42,3 @@ This option will detect duplicates across all tab groups, basically ignoring any
 ### Exclusions
 
 The exclusions allows for the user to be able to decide what they want the extension to ignore. The exclusions supports regex so you can have specific exclusions and the tabs that meet the criteria will be ignored from being closed if a duplicate is detected.
-
----
-
-## Installation
-
-
-1. Clone this repo `git clone https://github.com/AngeloKandah/DuplicateTabCloser.git` into a folder of your choice.
-2. Make sure you are in that folder in your cli.
-2. Install Dependencies `npm install`.
-3. Build the project `npm run build`.
-4. After this is installed, you will produce a /dist folder.
-5. Then go to chrome://extensions/ and click `load unpacked` and point it to that dist folder.

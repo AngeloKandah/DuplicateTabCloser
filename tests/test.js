@@ -20,7 +20,7 @@ describe('constructUrl', () => {
         const url = '';
         expect(() => {
             constructUrl(url);
-        }).toThrowError('Invalid URL: ');
+        }).toThrowError('Invalid URL');
     });
 });
 
