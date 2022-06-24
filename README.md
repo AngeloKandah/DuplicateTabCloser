@@ -24,6 +24,20 @@ For testing I use [Jest](https://jestjs.io/). To run the tests use `npm run test
 
 ---
 
+## Installation
+**note**: You must use node version `<= 16.13.0`. Otherwise you will encounter an error about `error:0308010C:digital envelope routines::unsupported`.
+To change your node version, check out [nvm](https://github.com/nvm-sh/nvm).
+
+
+1. Clone this repo `git clone https://github.com/AngeloKandah/DuplicateTabCloser.git` into a folder of your choice.
+2. Make sure you are in that folder in your cli.
+2. Install Dependencies `npm install`.
+3. Build the project `npm run build`.
+4. After this is installed, you will produce a `/dist` folder.
+5. Then go to chrome://extensions/ and click `load unpacked` and point it to that dist folder.
+
+---
+
 ## Options
 There are three options: moveTabs, effectTabGroups, effectWindows.
 There is also exclusions, which the user creates a list of so the extension knows to ignore urls that return true for the exclusion.

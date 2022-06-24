@@ -1,7 +1,11 @@
 import './styles.css';
-import { getLocalStorageKey, updateOptions } from './chrome_storage.js';
+import { updateOptions } from './chrome_storage.js';
+import { getOptions } from './background.js';
 
-getLocalStorageKey('options').then(({ options }) => {
+//any jquery-ers in the chat?
+const $ = id => document.getElementById(id);
+
+getOptions().then(options => {
     const {
         moveTabs,
         effectWindows,
@@ -9,11 +13,14 @@ getLocalStorageKey('options').then(({ options }) => {
         exclusions,
         logMaxUrls,
         loggedUrls,
+        closeGracePeriod,
     } = options;
-    document.getElementById('moveTabs').checked = moveTabs;
-    document.getElementById('effectWindows').checked = effectWindows;
-    document.getElementById('effectTabGroups').checked = effectTabGroups;
-    document.getElementById('logMaxUrls').value = logMaxUrls;
+    $('moveTabs').checked = moveTabs;
+    $('effectWindows').checked = effectWindows;
+    $('effectTabGroups').checked = effectTabGroups;
+    $('logMaxUrls').value = logMaxUrls;
+    $('closeGracePeriod').value = closeGracePeriod;
+
     createExclusionList(exclusions);
     createLogList(loggedUrls);
 });
@@ -22,8 +29,8 @@ document.querySelectorAll('.optionList').forEach((item) => {
     item.addEventListener('click', submitChanges);
 });
 
-const exclusionBox = document.getElementById('exclusionArray');
-const exclusionList = document.getElementById('exclusions');
+const exclusionBox = $('exclusionArray');
+const exclusionList = $('exclusions');
 
 function createExclusionList(exclusions) {
     exclusions.forEach(addToExclusionList);
@@ -59,14 +66,13 @@ function createDeleteButton() {
     return deleteButton;
 }
 
-function isOptionEnabled(id) {
-    return document.getElementById(id).checked;
+function isChecked(id) {
+    return $(id).checked;
 }
 
 async function submitChanges() {
     const settingFields = ['moveTabs', 'effectWindows', 'effectTabGroups'];
-    const [moveTabs, effectWindows, effectTabGroups] =
-        settingFields.map(isOptionEnabled);
+    const [moveTabs, effectWindows, effectTabGroups] = settingFields.map(isChecked);
     await updateOptions({ moveTabs, effectWindows, effectTabGroups });
 }
 
@@ -89,7 +95,7 @@ exclusionBox.addEventListener('keyup', async ({ code }) => {
     addToExclusionList(newExclusion);
 });
 
-const pages = [...document.getElementById('pageContainer').children];
+const pages = [...$('pageContainer').children];
 
 function setPage(goingForward) {
     const currentPageIndex = pages.findIndex((page) =>
@@ -106,11 +112,11 @@ function setPage(goingForward) {
 const nextPage = () => setPage(true);
 const prevPage = () => setPage(false);
 
-document.getElementById('nextPage').addEventListener('click', nextPage);
-document.getElementById('previousPage').addEventListener('click', prevPage);
+$('nextPage').addEventListener('click', nextPage);
+$('previousPage').addEventListener('click', prevPage);
 
-const numberOfUrlsToLog = document.getElementById('logMaxUrls');
-const loggedList = document.getElementById('loggedUrls');
+const numberOfUrlsToLog = $('logMaxUrls');
+const loggedList = $('loggedUrls');
 
 logMaxUrls.addEventListener('keyup', async ({ code }) => {
     const { value: newNumber } = numberOfUrlsToLog;
@@ -118,6 +124,15 @@ logMaxUrls.addEventListener('keyup', async ({ code }) => {
         return;
     }
     updateOptions({ logMaxUrls: newNumber });
+});
+
+const gracePeriodInput = $('closeGracePeriod');
+
+gracePeriodInput.addEventListener('change', async (event) => {
+    const { target: { value: closeGracePeriodRaw } } = event;
+    const closeGracePeriod = parseInt(closeGracePeriodRaw, 10);
+    console.log(`updating grace period to ${closeGracePeriod}`);
+    updateOptions({ closeGracePeriod });
 });
 
 function createLogList(urls) {
